@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.graticule {
+  fill: none;
+  stroke: #777;
+  stroke-opacity: .5;
+  stroke-width: .5px;
+}
+
+.land {
+  fill: #222;
+}
+
+.boundary {
+  fill: none;
+  stroke: #fff;
+  stroke-width: .5px;
+}
+
+</style>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="//d3js.org/topojson.v1.min.js"></script>
+<script>
+
+var width = 960,
+    height = 960;
+
+var projection = d3.geo.mercator()
+    .scale((width + 1) / 2 / Math.PI)
+    .translate([width / 2, height / 2])
+    .precision(.1);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+var graticule = d3.geo.graticule();
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+svg.append("path")
+    .datum(graticule)
+    .attr("class", "graticule")
+    .attr("d", path);
+
+d3.json("world-50m.json", function(error, world) {
+  if (error) throw error;
+
+  svg.insert("path", ".graticule")
+      .datum(topojson.feature(world, world.objects.land))
+      .attr("class", "land")
+      .attr("d", path);
+
+  svg.insert("path", ".graticule")
+      .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
+      .attr("class", "boundary")
+      .attr("d", path);
+});
+
+d3.select(self.frameElement).style("height", height + "px");
+
+//airports.dat: airport id, name, city, country, iata/faa, icao, lat, long, altitude, timezone, dst, tz
+d3.text("airports.dat", function(text) {
+  var airports = d3.csv.parseRows(text).map(function(row) {
+    return {
+        airport: parseInt(row[0]),
+        name: row[1],
+        iata: row[4],
+        lat: parseFloat(row[6]),
+        lon: parseFloat(row[7]),
+        height: parseFloat(row[8])
+    }
+  });
+  svg.selectAll(".pin")
+  .data(airports)
+  .enter().append("circle", ".pin")
+  .attr("r", 1)
+  .attr("transform", function(d) {
+    return "translate(" + projection([
+      d.lon,
+      d.lat
+    ]) + ")";
+  });
+});
+
+    
+
+</script>
