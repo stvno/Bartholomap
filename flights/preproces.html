@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+</style>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+<script src="//d3js.org/topojson.v1.min.js"></script>
+<script>
+
+var airports = [];
+
+/* London airports:
+Lutton: 492, LTN
+Hatwick: 502, LGW
+City: 503, LCY
+Heathrow: 507, LHR
+Stansted: 548, STN
+*/
+//airports.dat: airport id (ofl), name, city, country, iata/faa, icao, lat, long, altitude, timezone, dst, tz
+d3.text("airports.dat", function(text) {
+  airports = d3.csv.parseRows(text).map(function(row) {
+    return {
+        airport: parseInt(row[0]),
+        name: row[1],
+        iata: row[4],
+        lat: parseFloat(row[6]),
+        lon: parseFloat(row[7]),
+        height: parseFloat(row[8])
+    }
+  });
+});
+var london = [492,502,503,507,548]; 
+//357 destinations with directflights
+
+//routes.dat: airline, airline id, source airport (iata), source airport id (ofl), destination airport (iata), destination airport id (ofl), codeshare, stops, equipment
+var routes = [];
+var firstorder = [];
+var directflights = {};
+var others = [];
+d3.text("routes.dat", function(text) {
+  routes = d3.csv.parseRows(text).map(function(row) {
+    return {
+        source: row[2],
+        sourceid: parseInt(row[3]),     
+        destination: row[4],
+        destinationid: parseInt(row[5])
+    }
+  });
+  firstorder = routes.filter(function(d){
+        return london.indexOf(d.sourceid) > -1
+  })  
+  var fo =  firstorder.map(function(d){return d.destinationid});
+  
+
+  firstorder.forEach(function(d){
+    directflights[d.destination] = d;
+  })
+  
+  d3.select("body").append('div').html(function(d){return firstorder.length})
+  d3.select("body").append('div').html(function(d){return others.length})
+  /*d3.select("body").append('div').selectAll('.destination')
+  .data(firstorder)
+  .enter()
+  .append('div')
+  .html(function(d){return d.destination})*/
+  
+});
+
+
+</script>

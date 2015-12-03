@@ -18,10 +18,14 @@
   stroke: #fff;
   stroke-width: .5px;
 }
-
+.arc {
+  fill: none;
+  stroke: red;
+}
 </style>
 <body>
 <script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script>
 
@@ -42,30 +46,39 @@ var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-svg.append("path")
+svg.append("g").append("path")
     .datum(graticule)
     .attr("class", "graticule")
     .attr("d", path);
 
+    
 d3.json("world-50m.json", function(error, world) {
   if (error) throw error;
 
-  svg.insert("path", ".graticule")
+  svg.append("g").insert("path", ".graticule")
       .datum(topojson.feature(world, world.objects.land))
       .attr("class", "land")
       .attr("d", path);
 
-  svg.insert("path", ".graticule")
+  svg.append("g").insert("path", ".graticule")
       .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
       .attr("class", "boundary")
       .attr("d", path);
 });
 
 d3.select(self.frameElement).style("height", height + "px");
+var airports = [];
 
-//airports.dat: airport id, name, city, country, iata/faa, icao, lat, long, altitude, timezone, dst, tz
+/* London airports:
+Lutton: 492, LTN
+Hatwick: 502, LGW
+City: 503, LCY
+Heathrow: 507, LHR
+Stansted: 548, STN
+*/
+//airports.dat: airport id (ofl), name, city, country, iata/faa, icao, lat, long, altitude, timezone, dst, tz
 d3.text("airports.dat", function(text) {
-  var airports = d3.csv.parseRows(text).map(function(row) {
+  airports = d3.csv.parseRows(text).map(function(row) {
     return {
         airport: parseInt(row[0]),
         name: row[1],
@@ -75,7 +88,7 @@ d3.text("airports.dat", function(text) {
         height: parseFloat(row[8])
     }
   });
-  svg.selectAll(".pin")
+  svg.append('g').selectAll(".pin")
   .data(airports)
   .enter().append("circle", ".pin")
   .attr("r", 1)
@@ -87,6 +100,42 @@ d3.text("airports.dat", function(text) {
   });
 });
 
-    
+//routes.dat: airline, airline id, source airport (iata), source airport id (ofl), destination airport (iata), destination airport id (ofl), codeshare, stops, equipment
+var routes = [];
+var firstorder = [];
+d3.text("routes.dat", function(text) {
+  data = d3.csv.parseRows(text).map(function(row) {
+    return {
+        source: row[2],
+        sourceid: parseInt(row[3]),     
+        destination: row[4],
+        destinationid: parseInt(row[5])
+    }
+  });
+  routes = data.map(function(d){
+     var a = airports.filter(function(e){return e.airport == d.sourceid})
+     var t = airports.filter(function(e){return e.airport == d.destinationid})
+     if(a.length >0 &&t.length>0){
+     return {
+        type: "LineString",
+            coordinates: [
+                [ a[0].lon, a[0].lat ],
+                [ t[0].lon, t[0].lat ]
+            ],
+            properties: {
+            source: d.source,        
+            dest: d.destination
+            }        
+     }
+     }
+  })  
+  svg.append('g').selectAll('arc')
+  .data(routes)
+    .enter()
+    .append("path")
+    .attr({'class':'arc'})
+    .attr({d: path})
+});
+
 
 </script>
