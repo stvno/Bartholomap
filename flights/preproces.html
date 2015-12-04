@@ -39,7 +39,6 @@ var ArcTime = function(begin,end) {
     return d/speed;
 }
 
-
 var airports = [];
 
 /* London airports:
@@ -72,7 +71,7 @@ var firstorder = [];
 var directflights = {};
 var distances = [];
 d3.text("routes.dat", function(text) {
-  routes = d3.csv.parseRows(text).map(function(row) {
+  data = d3.csv.parseRows(text).map(function(row) {
     return {
         source: row[2],
         sourceid: parseInt(row[3]),     
@@ -80,7 +79,36 @@ d3.text("routes.dat", function(text) {
         destinationid: parseInt(row[5])
     }
   });
-  firstorder = routes.filter(function(d){
+  routes = data.map(function(d){
+     var a = airports.filter(function(e){return e.airport == d.sourceid})
+     var t = airports.filter(function(e){return e.airport == d.destinationid})
+     if(a.length >0 &&t.length>0){
+         return {
+            beginlat: a[0].lat,
+            beginlon: a[0].lon,
+            endlat: t[0].lat,
+            endlon: t[0].lon,
+            flighttime: ArcTime(a[0],t[0]),
+            source:d.sourceid,
+            dest:d.destinationid,
+            valid: true
+        }
+     }
+     else { 
+        return {
+            beginlat: null,
+            beginlon: null,
+            endlat: null,
+            endlon: null,
+            flighttime: null,
+            source:d.null,
+            dest:d.null,
+            valid: false
+            }
+        }
+   });  
+  
+/*  firstorder = routes.filter(function(d){
         return london.indexOf(d.sourceid) > -1
   })  
   var fo =  firstorder.map(function(d){return d.destinationid});
@@ -95,13 +123,12 @@ d3.text("routes.dat", function(text) {
            distances.push({airport:k,time:ArcTime(londoncenter,end),point:end})
         }
   }
-  d3.select("body").append('div').html(function(d){return firstorder.length})
+  d3.select("body").append('div').html(function(d){return firstorder.length})*/
   //d3.select("body").append('div').html(function(d){return others.length})
   /*d3.select("body").append('div').selectAll('.destination')
-  .data(firstorder)
-  .enter()
-  .append('div')
-  .html(function(d){return d.destination})*/
+  .data(firstorder)*/
+  d3.select("body").append("div")
+  .html(function(d){return d3.csv.format(routes)})
   
 });
 
