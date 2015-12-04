@@ -10,10 +10,8 @@
 }
 
 .coast {
-  
   stroke: #1d91c0;
   stroke-width: 3px;
-   
    stroke-opacity: .25;
 }
 .land {
@@ -28,10 +26,6 @@
   fill: none;
   stroke: #fff;
   stroke-width: .5px;
-}
-.arc {
-  fill: none;
-  stroke: red;
 }
 
 .q0-9 {fill:none; stroke-width:2;stroke:#ffffcc}
@@ -55,35 +49,22 @@
 <script src="//d3js.org/queue.v1.min.js"></script>
 <script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
 <script src="//d3js.org/topojson.v1.min.js"></script>
-<script src="//api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js"></script>
 
 
-<link href='https://api.tiles.mapbox.com/mapbox.js/v2.2.3/mapbox.css' rel='stylesheet' />
-<script src='https://api.tiles.mapbox.com/mapbox.js/v2.2.3/mapbox.js'></script>
-<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.2/turf.min.js'></script>
 <script>
-L.mapbox.accessToken = 'pk.eyJ1Ijoid2hlcmVjYW1wZXUiLCJhIjoieHE4bVNuRSJ9.qFTj9L2TMzVXX8G2QwJl_g';
-</script>
-<script>
- /*   L.mapbox.accessToken = 'pk.eyJ1Ijoid2hlcmVjYW1wZXUiLCJhIjoieHE4bVNuRSJ9.qFTj9L2TMzVXX8G2QwJl_g';
-    var map = L.mapbox.map('map', 'mapbox.light')
-    .setView([51.5287352,-0.3817734], 2);
-   */
+
 var quantize = d3.scale.quantize()
     .domain([0, 50])
     .range(d3.range(9).map(function(i) { return "q" + i + "-9"; }));
     
-var colorMe = function(p) {
-    console.log(p);
-    return 'p';
-}
 var width = 960,
     height = 960;
 
-var projection = d3.geo.mercator()
+var projection = d3.geo.mollweide()
     .scale((width + 1) / 2 / Math.PI)
-    .translate([width / 2, height / 2])
-    .precision(.1);
+    .translate([width / 2, height /2])
+    .precision(.1)
+    .rotate([0.38,-51.52]);
 
 var path = d3.geo.path()
     .projection(projection);
@@ -99,10 +80,15 @@ svg.append("g").append("path")
     .attr("class", "graticule")
     .attr("d", path);
 
-    
-d3.json("world-50m.json", function(error, world) {
-  if (error) throw error;
+  
+d3.select(self.frameElement).style("height", height + "px");
 
+queue()
+    .defer(d3.json, "world-50m.json")
+    .defer(d3.json,"isolines.geojson")
+    .await(ready)
+
+function ready(error,world,lines) {
   svg.append("g").insert("path", ".graticule")
       .datum(topojson.feature(world, world.objects.land))
       .attr("class", "coast")
@@ -117,30 +103,15 @@ d3.json("world-50m.json", function(error, world) {
       .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
       .attr("class", "boundary")
       .attr("d", path);
-});
-
-
-d3.select(self.frameElement).style("height", height + "px");
-var airports = [];
-var london = [492,502,503,507,548]; 
-var londoncenter = {lat:51.5287352,lon:-0.3817734}
-var destinations = [];
-var isolined;
-/* London airports:
-Lutton: 492, LTN
-Hatwick: 502, LGW
-City: 503, LCY
-Heathrow: 507, LHR
-Stansted: 548, STN
-*/
-
-queue()
-    .defer(d3.text, "airports.dat")
-    .defer(d3.csv,"dijkstra.csv")
-    .await(ready)
-
-function ready(error,airportext,flights) {
-    airports = d3.csv.parseRows(airportext).map(function(row) {
+      
+   svg.append('g').selectAll("path")
+    .data(lines.features)
+    .enter().append("path")
+    .attr("class",function(d){
+    return quantize(d.properties.time_max)
+    })
+    .attr("d", path);   
+   /* airports = d3.csv.parseRows(airportext).map(function(row) {
         //we want 1 london, so all london airports are remapped to the center of london
         if (london.indexOf(parseInt(row[0]))>-1) {
             return {
@@ -182,27 +153,8 @@ function ready(error,airportext,flights) {
       "type": "FeatureCollection",
       "features":destinations
     }
-    var breaks = [0, 1, 2,3,4,5,6,7,8,9,10, 15, 20, 25, 30, 35, 40, 45, 50,1000];
-  //  isolined = turf.isolines(points, 'time', 1000, breaks);
-
-    
-    //var isolinedLayer = L.mapbox.featureLayer(isolined)
-    //.addTo(map);
-    
+ */
    
-d3.json("isolines.geojson", function(error, lines) {
-  if (error) throw error;
-    
- svg.append('g').selectAll("path")
-    .data(lines.features)
-    .enter().append("path")
-    .attr("class",function(d){
-    return quantize(d.properties.time_max)
-    })
-    .attr("d", path);
-  
-
-});        
 }
 
 </script>
