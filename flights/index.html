@@ -68,7 +68,7 @@ d3.json("world-50m.json", function(error, world) {
 
 d3.select(self.frameElement).style("height", height + "px");
 var airports = [];
-
+var london = [492,502,503,507,548]; 
 /* London airports:
 Lutton: 492, LTN
 Hatwick: 502, LGW
@@ -112,7 +112,10 @@ d3.text("routes.dat", function(text) {
         destinationid: parseInt(row[5])
     }
   });
-  routes = data.map(function(d){
+  firstorder = data.filter(function(d){
+        return london.indexOf(d.sourceid) > -1
+  })  
+  routes = firstorder.map(function(d){
      var a = airports.filter(function(e){return e.airport == d.sourceid})
      var t = airports.filter(function(e){return e.airport == d.destinationid})
      if(a.length >0 &&t.length>0){
