@@ -22,6 +22,16 @@
   fill: none;
   stroke: red;
 }
+
+.q0-9 { fill: none; stroke:rgba(247,251,255,0.5); }
+.q1-9 { fill: none; stroke:rgba(222,235,247,0.5); }
+.q2-9 { fill: none; stroke:rgba(198,219,239,0.5); }
+.q3-9 { fill: none; stroke:rgba(158,202,225,0.5); }
+.q4-9 { fill: none; stroke:rgba(107,174,214,0.5); }
+.q5-9 { fill: none; stroke:rgba(66,146,198,0.5); }
+.q6-9 { fill: none; stroke:rgba(33,113,181,0.5); }
+.q7-9 { fill: none; stroke:rgba(8,81,156,0.5); }
+.q8-9 { fill: none; stroke:rgba(8,48,107,0.5); }
 </style>
 <body>
 <script src="//d3js.org/d3.v3.min.js"></script>
@@ -29,6 +39,39 @@
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script>
 
+Number.prototype.toRadians = function() {
+   return this * Math.PI / 180;
+}
+
+var ArcTime = function(begin,end) {
+    var lat1 = begin.lat;
+    var lat2 = end.lat;
+    var lon1 = begin.lon;
+    var lon2 = end.lon;
+    var speed = 600000; //(600km/h)
+
+    var R = 6371000; // metres
+    var φ1 = lat1.toRadians();
+    var φ2 = lat2.toRadians();
+    var Δφ = (lat2-lat1).toRadians();
+    var Δλ = (lon2-lon1).toRadians();
+
+    var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    var d = R * c;
+    return d/speed;
+}
+var quantize = d3.scale.quantize()
+    .domain([0, 24])
+    .range(d3.range(9).map(function(i) { return "q" + i + "-9"; }));
+    
+var colorMe = function(p) {
+    console.log(p);
+    return 'p';
+}
 var width = 960,
     height = 960;
 
@@ -69,6 +112,7 @@ d3.json("world-50m.json", function(error, world) {
 d3.select(self.frameElement).style("height", height + "px");
 var airports = [];
 var london = [492,502,503,507,548]; 
+var londoncenter = {lat:51.5287352,lon:-0.3817734}
 /* London airports:
 Lutton: 492, LTN
 Hatwick: 502, LGW
@@ -103,6 +147,7 @@ d3.text("airports.dat", function(text) {
 //routes.dat: airline, airline id, source airport (iata), source airport id (ofl), destination airport (iata), destination airport id (ofl), codeshare, stops, equipment
 var routes = [];
 var firstorder = [];
+/*
 d3.text("routes.dat", function(text) {
   data = d3.csv.parseRows(text).map(function(row) {
     return {
@@ -127,18 +172,35 @@ d3.text("routes.dat", function(text) {
             ],
             properties: {
             source: d.source,        
-            dest: d.destination
+            dest: d.destination,
+            time: ArcTime(a[0],t[0])
             }        
      }
      }
-  })  
-  svg.append('g').selectAll('arc')
-  .data(routes)
-    .enter()
-    .append("path")
-    .attr({'class':'arc'})
-    .attr({d: path})
-});
+  })  */
+ d3.csv("time.csv",function(d){
+return {
+  type: "LineString",
+            coordinates: [
+                [ parseFloat(d.beginlon), parseFloat(d.beginlat) ],
+                [ parseFloat(d.endlon), parseFloat(d.endlat) ]
+            ],
+            properties: {
+            time: parseFloat(d.flighttime)
+            }       
+    }
+},function(data){
+  svg.append('g')
+    .attr("class","arc")
+  .selectAll('path')
+    .data(data)
+    .enter().append("path")
+    .attr("class",function(d){if(d)return quantize(d.properties.time)})
+    .attr("d", path);
+ 
+  
+  })
+ 
 
 
 </script>
