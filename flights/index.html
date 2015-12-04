@@ -9,8 +9,19 @@
   stroke-width: .5px;
 }
 
+.coast {
+  
+  stroke: #1d91c0;
+  stroke-width: 3px;
+   
+   stroke-opacity: .25;
+}
 .land {
   fill: #222;
+  stroke: #fff;
+  stroke-width: 1px;
+    stroke-opacity: .5;
+  
 }
 
 .boundary {
@@ -23,26 +34,43 @@
   stroke: red;
 }
 
-.q0-9 { fill:#ffffcc}
-.q1-9 { fill:#ffeda0}
-.q2-9 { fill:#fed976}
-.q3-9 { fill:#feb24c}
-.q4-9 { fill:#fd8d3c}
-.q5-9 { fill:#fc4e2a}
-.q6-9 { fill:#e31a1c}
-.q7-9 { fill:#bd0026}
-.q8-9 { fill:#800026}
+.q0-9 {fill:none; stroke-width:2;stroke:#ffffcc}
+.q1-9 {fill:none; stroke-width:2;stroke:#ffeda0}
+.q2-9 {fill:none; stroke-width:2;stroke:#fed976}
+.q3-9 {fill:none; stroke-width:2;stroke:#feb24c}
+.q4-9 {fill:none; stroke-width:2;stroke:#fd8d3c}
+.q5-9 {fill:none; stroke-width:2;stroke:#fc4e2a}
+.q6-9 {fill:none; stroke-width:2;stroke:#e31a1c}
+.q7-9 {fill:none; stroke-width:2;stroke:#bd0026}
+.q8-9 {fill:none; stroke-width:2;stroke:#800026}
 
 </style>
+<style>
+  body { margin: 0; padding: 0;     background: #081d58;}
+  #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
 <body>
+<div id='map'></div>
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script src="//d3js.org/queue.v1.min.js"></script>
 <script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
 <script src="//d3js.org/topojson.v1.min.js"></script>
-<script>
+<script src="//api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js"></script>
 
+
+<link href='https://api.tiles.mapbox.com/mapbox.js/v2.2.3/mapbox.css' rel='stylesheet' />
+<script src='https://api.tiles.mapbox.com/mapbox.js/v2.2.3/mapbox.js'></script>
+<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.2/turf.min.js'></script>
+<script>
+L.mapbox.accessToken = 'pk.eyJ1Ijoid2hlcmVjYW1wZXUiLCJhIjoieHE4bVNuRSJ9.qFTj9L2TMzVXX8G2QwJl_g';
+</script>
+<script>
+ /*   L.mapbox.accessToken = 'pk.eyJ1Ijoid2hlcmVjYW1wZXUiLCJhIjoieHE4bVNuRSJ9.qFTj9L2TMzVXX8G2QwJl_g';
+    var map = L.mapbox.map('map', 'mapbox.light')
+    .setView([51.5287352,-0.3817734], 2);
+   */
 var quantize = d3.scale.quantize()
-    .domain([0, 35])
+    .domain([0, 50])
     .range(d3.range(9).map(function(i) { return "q" + i + "-9"; }));
     
 var colorMe = function(p) {
@@ -77,6 +105,11 @@ d3.json("world-50m.json", function(error, world) {
 
   svg.append("g").insert("path", ".graticule")
       .datum(topojson.feature(world, world.objects.land))
+      .attr("class", "coast")
+      .attr("d", path);
+
+  svg.append("g").insert("path", ".graticule")
+      .datum(topojson.feature(world, world.objects.land))
       .attr("class", "land")
       .attr("d", path);
 
@@ -86,11 +119,13 @@ d3.json("world-50m.json", function(error, world) {
       .attr("d", path);
 });
 
+
 d3.select(self.frameElement).style("height", height + "px");
 var airports = [];
 var london = [492,502,503,507,548]; 
 var londoncenter = {lat:51.5287352,lon:-0.3817734}
 var destinations = [];
+var isolined;
 /* London airports:
 Lutton: 492, LTN
 Hatwick: 502, LGW
@@ -131,79 +166,43 @@ function ready(error,airportext,flights) {
     destinations = flights.map(function(d){
         var airport = airports.filter(function(a){return a.iata == d.destination})[0];
         return {
-                destination: d.destination,
-                route:d.route.split(','),
-                time:parseFloat(d.length),
-                lon:airport.lon,
-                lat:airport.lat
+                "type":"Feature",
+                "geometry":{
+                    "type":"Point",
+                    "coordinates": [airport.lon,airport.lat]
+                },
+                "properties": {
+                    "destination": d.destination,
+                    "route":d.route.split(','),
+                    "time":parseFloat(d.length)
+                    }
             }
     })
-    svg.append('g').selectAll(".pin")
-          .data(destinations)
-          .enter().append("circle", ".pin")
-          .attr("r", 3)
-          .attr("class",function(d){return quantize(d.time)})
-          .attr("transform", function(d) {
-            return "translate(" + projection([
-              d.lon,
-              d.lat
-            ]) + ")";
-          });
-        
-}
-    /*
+    var points = {
+      "type": "FeatureCollection",
+      "features":destinations
+    }
+    var breaks = [0, 1, 2,3,4,5,6,7,8,9,10, 15, 20, 25, 30, 35, 40, 45, 50,1000];
+  //  isolined = turf.isolines(points, 'time', 1000, breaks);
+
     
-    , function(text) {
-        airports = d3.csv.parseRows(text).map(function(row) {
-        //we want 1 london, so all london airports are remapped to the center of london
-        if (london.indexOf(parseInt(row[0]))>-1) {
-            return {
-                airport: -1,
-                name: "London Airports",
-                iata: "LONDON",
-                lat: londoncenter.lat,
-                lon: londoncenter.lon,
-                height: parseFloat(row[8])
-            }
-        }
-        else {
-            return {
-                airport: parseInt(row[0]),
-                name: row[1],
-                iata: row[4],
-                lat: parseFloat(row[6]),
-                lon: parseFloat(row[7]),
-                height: parseFloat(row[8])
-            }
-        }
-      });
+    //var isolinedLayer = L.mapbox.featureLayer(isolined)
+    //.addTo(map);
+    
+   
+d3.json("isolines.geojson", function(error, lines) {
+  if (error) throw error;
+    
+ svg.append('g').selectAll("path")
+    .data(lines.features)
+    .enter().append("path")
+    .attr("class",function(d){
+    return quantize(d.properties.time_max)
     })
-    .defer(d3.csv,"dijkstra.csv",
-        function(d){
-            var airport = airports.filter(function(a){return a.iata == d.destination});
-            return {
-                destination: d.destination,
-                route:d.route.split(','),
-                time:parseFloat(d.length),
-                lon:parseFloat(airport.lon),
-                lat:parseFloat(airport.lat)
-            }
-        },
-        function(data){
-           
-            
-        svg.append('g').selectAll(".pin")
-          .data(data)
-          .enter().append("circle", ".pin")
-          .attr("r", 3)
-          .attr("class",function(d){return quantize(d.time)})
-          .attr("transform", function(d) {
-            return "translate(" + projection([
-              d.lon,
-              d.lat
-            ]) + ")";
-          });
-        });
-*/
+    .attr("d", path);
+  
+
+});        
+}
 
 </script>

@@ -81,9 +81,11 @@ function(data){
     for(var key in mynodes) {
         console.log(one); //this process takes ages, the console.log is to give you a hint of progress
         var p = graph.shortestPath('LONDON',key)
-        shortestroutes.push({
-            destination:key,route:p.toString(),length:calculateLength(p,data)
-        })
+        if(p.length>0) {
+            shortestroutes.push({
+                destination:key,route:p.toString(),length:calculateLength(p,data)
+            })
+        }
         one--;
     }
     //print the CSV on the screen
