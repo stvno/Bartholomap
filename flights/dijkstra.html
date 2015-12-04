@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+</style>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+<script src="//d3js.org/topojson.v1.min.js"></script>
+<script src="dijkstras.js"></script>
+<script>
+
+
+var airports = [];
+var london = [492,502,503,507,548]; 
+var londoncenter = {lat:51.5287352,lon:-0.3817734}
+/* London airports:
+Lutton: 492, LTN
+Hatwick: 502, LGW
+City: 503, LCY
+Heathrow: 507, LHR
+Stansted: 548, STN
+*/
+//airports.dat: airport id (ofl), name, city, country, iata/faa, icao, lat, long, altitude, timezone, dst, tz
+d3.text("airports.dat", function(text) {
+  airports = d3.csv.parseRows(text).map(function(row) {
+    return {
+        airport: parseInt(row[0]),
+        name: row[1],
+        iata: row[4],
+        lat: parseFloat(row[6]),
+        lon: parseFloat(row[7]),
+        height: parseFloat(row[8])
+    }
+  });
+ 
+});
+var graph = new Graph();
+var mynodes = {};
+var shortestroutes = [];
+//beginlat,beginlon,endlat,endlon,flighttime,source,dest,valid
+d3.csv("time.csv",function(d){
+return {
+   valid: JSON.parse(d.valid),
+    begin: d.start,
+    end: d.end,
+    weight: parseFloat(d.flighttime)
+    }
+},function(data){
+   data.forEach(function(a){
+        if(a.valid) {
+        if(mynodes[a.begin]===undefined) mynodes[a.begin] = {};
+        mynodes[a.begin][a.end] = a.weight
+        if(mynodes[a.end]===undefined) mynodes[a.end] = {};
+        mynodes[a.end][a.begin] = a.weight
+        
+        }
+    })
+    for(var key in mynodes) {
+        graph.addVertex(key, mynodes[key]);
+    }
+    for(var key in mynodes) {
+        shortestroutes.push({destination:key,route:graph.shortestPath('LONDON',key)
+        })
+    }
+    
+  })
+ 
+
+
+</script>
