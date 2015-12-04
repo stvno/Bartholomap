@@ -9,6 +9,37 @@
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script>
 
+/* great circle distance per
+http://www.movable-type.co.uk/scripts/latlong.html
+*/
+
+Number.prototype.toRadians = function() {
+   return this * Math.PI / 180;
+}
+
+var ArcTime = function(begin,end) {
+    var lat1 = begin.lat;
+    var lat2 = end.lat;
+    var lon1 = begin.lon;
+    var lon2 = end.lon;
+    var speed = 600000; //(600km/h)
+
+    var R = 6371000; // metres
+    var φ1 = lat1.toRadians();
+    var φ2 = lat2.toRadians();
+    var Δφ = (lat2-lat1).toRadians();
+    var Δλ = (lon2-lon1).toRadians();
+
+    var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    var d = R * c;
+    return d/speed;
+}
+
+
 var airports = [];
 
 /* London airports:
@@ -32,14 +63,14 @@ d3.text("airports.dat", function(text) {
   });
 });
 var london = [492,502,503,507,548]; 
-//london center: 51.5287352,-0.3817734
+var londoncenter = {lat:51.5287352,lon:-0.3817734}
 //357 destinations with directflights
 
 //routes.dat: airline, airline id, source airport (iata), source airport id (ofl), destination airport (iata), destination airport id (ofl), codeshare, stops, equipment
 var routes = [];
 var firstorder = [];
 var directflights = {};
-var others = [];
+var distances = [];
 d3.text("routes.dat", function(text) {
   routes = d3.csv.parseRows(text).map(function(row) {
     return {
@@ -58,9 +89,14 @@ d3.text("routes.dat", function(text) {
   firstorder.forEach(function(d){
     directflights[d.destination] = d;
   })
-  
+  for (var k in directflights) {
+     if (directflights.hasOwnProperty(k)) {
+           var end = airports.filter(function(d){ return d.airport == directflights[k].destinationid})[0]
+           distances.push({airport:k,time:ArcTime(londoncenter,end),point:end})
+        }
+  }
   d3.select("body").append('div').html(function(d){return firstorder.length})
-  d3.select("body").append('div').html(function(d){return others.length})
+  //d3.select("body").append('div').html(function(d){return others.length})
   /*d3.select("body").append('div').selectAll('.destination')
   .data(firstorder)
   .enter()
