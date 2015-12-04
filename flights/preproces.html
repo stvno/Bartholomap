@@ -1,13 +1,27 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<style>
-
-</style>
+<title>Create a timetable with the traveltime and airport locations for each flight in the database</title>
 <body>
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script>
+console.warn('Note; this is a slow process (minutes), you are better of using the finished time.csv, it takes a few hours on a i7-5500u')
+//series of globals
+var airports = [];
+var routes = [];
+var firstorder = [];
+var directflights = {};
+var distances = [];
+/* London airports:
+Lutton: 492, LTN
+Hatwick: 502, LGW
+City: 503, LCY
+Heathrow: 507, LHR
+Stansted: 548, STN
+*/
+var london = [492,502,503,507,548]; 
+var londoncenter = {lat:51.5287352,lon:-0.3817734}
 
 /* great circle distance per
 http://www.movable-type.co.uk/scripts/latlong.html
@@ -39,23 +53,11 @@ var ArcTime = function(begin,end) {
     return d/speed;
 }
 
-var airports = [];
-
-/* London airports:
-Lutton: 492, LTN
-Hatwick: 502, LGW
-City: 503, LCY
-Heathrow: 507, LHR
-Stansted: 548, STN
-*/
-var london = [492,502,503,507,548]; 
-var londoncenter = {lat:51.5287352,lon:-0.3817734}
-//airports.dat: airport id (ofl), name, city, country, iata/faa, icao, lat, long, altitude, timezone, dst, tz
+//read airports.dat and store it in airports
+//airport id (ofl), name, city, country, iata/faa, icao, lat, long, altitude, timezone, dst, tz
 d3.text("airports.dat", function(text) {
-  airports = d3.csv.parseRows(text).map(function(row) {
-    /*
-     we want 1 london, so all london airports are remapped to the center of london
-     */
+    airports = d3.csv.parseRows(text).map(function(row) {
+    //we want 1 london, so all london airports are remapped to the center of london
     if (london.indexOf(parseInt(row[0]))>-1) {
         return {
             airport: -1,
@@ -79,24 +81,18 @@ d3.text("airports.dat", function(text) {
   });
 });
 
-//357 destinations with directflights
 
-//routes.dat: airline, airline id, source airport (iata), source airport id (ofl), destination airport (iata), destination airport id (ofl), codeshare, stops, equipment
-var routes = [];
-var firstorder = [];
-var directflights = {};
-var distances = [];
+//read routes.dat, join it with airports and store it in routes
+//airline, airline id, source airport (iata), source airport id (ofl), destination airport (iata), destination airport id (ofl), codeshare, stops, equipment
 d3.text("routes.dat", function(text) {
-  data = d3.csv.parseRows(text).map(function(row) {
-    /*
-     we want 1 london, so all london airports are remapped to the center of london
-     */
+    data = d3.csv.parseRows(text).map(function(row) {    
     var rij = {
             source: row[2],
             sourceid: parseInt(row[3]),     
             destination: row[4],
             destinationid: parseInt(row[5])
         }
+    //we want 1 london, so all london airports are remapped to the center of london
     if (london.indexOf(parseInt(row[3]))>-1) {
         rij.sourceid = -1;
         rij.source = "LONDON";
@@ -108,10 +104,10 @@ d3.text("routes.dat", function(text) {
     return rij;
   });
   routes = data.map(function(d){
-     var a = airports.filter(function(e){return e.iata == d.source})
-     var t = airports.filter(function(e){return e.iata == d.destination})
-     if(a.length >0 &&t.length>0){
-         return {
+    var a = airports.filter(function(e){return e.iata == d.source})
+    var t = airports.filter(function(e){return e.iata == d.destination})
+    if(a.length >0 &&t.length>0){
+        return {
             beginlat: a[0].lat,
             beginlon: a[0].lon,
             endlat: t[0].lat,
@@ -124,7 +120,7 @@ d3.text("routes.dat", function(text) {
             valid: true
         }
      }
-     else { 
+     else { //there are some flights with airports that are not on the airports-list, drop them
         return {
             beginlat: null,
             beginlon: null,
@@ -140,29 +136,8 @@ d3.text("routes.dat", function(text) {
         }
    });  
   
-/*  firstorder = routes.filter(function(d){
-        return london.indexOf(d.sourceid) > -1
-  })  
-  var fo =  firstorder.map(function(d){return d.destinationid});
-  
-
-  firstorder.forEach(function(d){
-    directflights[d.destination] = d;
-  })
-  for (var k in directflights) {
-     if (directflights.hasOwnProperty(k)) {
-           var end = airports.filter(function(d){ return d.airport == directflights[k].destinationid})[0]
-           distances.push({airport:k,time:ArcTime(londoncenter,end),point:end})
-        }
-  }
-  d3.select("body").append('div').html(function(d){return firstorder.length})*/
-  //d3.select("body").append('div').html(function(d){return others.length})
-  /*d3.select("body").append('div').selectAll('.destination')
-  .data(firstorder)*/
+  //print the CSV on the screen
   d3.select("body").append("div")
   .html(function(d){return d3.csv.format(routes)})
-  
 });
-
-
 </script>
