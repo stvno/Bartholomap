@@ -133,7 +133,7 @@ function ready(error,airportext,flights) {
         return {
                 destination: d.destination,
                 route:d.route.split(','),
-                time:parseFloat(d.length),
+                time:parseFloat(d.length)+d.route.split(',').length*2,
                 lon:airport.lon,
                 lat:airport.lat
             }

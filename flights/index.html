@@ -37,22 +37,38 @@
 .q6-9 {fill:none; stroke-width:2;stroke:#e31a1c}
 .q7-9 {fill:none; stroke-width:2;stroke:#bd0026}
 .q8-9 {fill:none; stroke-width:2;stroke:#800026}
+.stroke {
+  fill: none;
+  stroke: #000;
+  stroke-width: 3px;
+}
 
+.fill {
+  fill: #081d58;
+}
 </style>
 <style>
-  body { margin: 0; padding: 0;     background: #081d58;}
+  body { margin: 0; padding: 0;     }
   #map { position: absolute; top: 0; bottom: 0; width: 100%; }
 </style>
 <body>
 <div id='map'></div>
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script src="//d3js.org/queue.v1.min.js"></script>
-<script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+<script src="//d3js.org/d3.geo.projection.v0.min.js"></script>
 <script src="//d3js.org/topojson.v1.min.js"></script>
-
-
+<script src="d3.geo.polyhedron.min.js"></script>
+<script src="//api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js"></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v2.2.3/mapbox.css' rel='stylesheet' />
+<script src='https://api.tiles.mapbox.com/mapbox.js/v2.2.3/mapbox.js'></script>
+<script src='../../turf/turf.js'></script>
 <script>
-
+L.mapbox.accessToken = 'pk.eyJ1Ijoid2hlcmVjYW1wZXUiLCJhIjoieHE4bVNuRSJ9.qFTj9L2TMzVXX8G2QwJl_g';
+</script>
+<script>
+ L.mapbox.accessToken = 'pk.eyJ1Ijoid2hlcmVjYW1wZXUiLCJhIjoieHE4bVNuRSJ9.qFTj9L2TMzVXX8G2QwJl_g';
+    var map = L.mapbox.map('map', 'mapbox.light')
+    .setView([51.5287352,-0.3817734], 2);
 var quantize = d3.scale.quantize()
     .domain([0, 50])
     .range(d3.range(9).map(function(i) { return "q" + i + "-9"; }));
@@ -60,48 +76,74 @@ var quantize = d3.scale.quantize()
 var width = 960,
     height = 960;
 
-var projection = d3.geo.mollweide()
+//var projection = d3.geo.polyhedron.waterman()
+//var projection = d3.geo.mollweide()
+var projection = d3.geo.mercator()
     .scale((width + 1) / 2 / Math.PI)
     .translate([width / 2, height /2])
     .precision(.1)
-    .rotate([0.38,-51.52]);
+ //   .rotate([0.38,-51.52]);
 
 var path = d3.geo.path()
     .projection(projection);
 
 var graticule = d3.geo.graticule();
-
+/*
 var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
+var defs = svg.append("defs");
 
+defs.append("path")
+    .datum({type: "Sphere"})
+    .attr("id", "sphere")
+    .attr("d", path);
+
+defs.append("clipPath")
+    .attr("id", "clip")
+  .append("use")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "stroke")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "fill")
+    .attr("xlink:href", "#sphere");
+    
 svg.append("g").append("path")
     .datum(graticule)
     .attr("class", "graticule")
-    .attr("d", path);
+    .attr("clip-path", "url(#clip)")
+    .attr("d", path);*/
 
   
 d3.select(self.frameElement).style("height", height + "px");
 
 queue()
     .defer(d3.json, "world-50m.json")
-    .defer(d3.json,"isolines.geojson")
+    .defer(d3.json,"airports.json")
+//    .defer(d3.json,"isolines.geojson")
     .await(ready)
-
+var isolined;
 function ready(error,world,lines) {
-  svg.append("g").insert("path", ".graticule")
+/*  svg.append("g").insert("path", ".graticule")
       .datum(topojson.feature(world, world.objects.land))
       .attr("class", "coast")
+       .attr("clip-path", "url(#clip)")
       .attr("d", path);
 
   svg.append("g").insert("path", ".graticule")
       .datum(topojson.feature(world, world.objects.land))
       .attr("class", "land")
+       .attr("clip-path", "url(#clip)")
       .attr("d", path);
 
   svg.append("g").insert("path", ".graticule")
       .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
       .attr("class", "boundary")
+       .attr("clip-path", "url(#clip)")
       .attr("d", path);
       
    svg.append('g').selectAll("path")
@@ -110,7 +152,15 @@ function ready(error,world,lines) {
     .attr("class",function(d){
     return quantize(d.properties.time_max)
     })
-    .attr("d", path);   
+     .attr("clip-path", "url(#clip)")
+    .attr("d", path);   */
+    
+     var breaks = [0, 1, 2,3,4,5,6,7,8,9,10, 15, 20, 25, 30, 35, 40, 45, 50];
+    isolined = turf.isolines(lines, 'time', 180, breaks);
+    
+    var isolinedLayer = L.mapbox.featureLayer(isolined)
+    .addTo(map);
+    
    /* airports = d3.csv.parseRows(airportext).map(function(row) {
         //we want 1 london, so all london airports are remapped to the center of london
         if (london.indexOf(parseInt(row[0]))>-1) {

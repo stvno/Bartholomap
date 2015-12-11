@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.graticule {
+  fill: none;
+  stroke: #777;
+  stroke-opacity: .5;
+  stroke-width: .5px;
+}
+
+.coast {
+  stroke: #1d91c0;
+  stroke-width: 3px;
+   stroke-opacity: .25;
+}
+.land {
+  fill: #222;
+  stroke: #fff;
+  stroke-width: 1px;
+    stroke-opacity: .5;
+  
+}
+
+.boundary {
+  fill: none;
+  stroke: #fff;
+  stroke-width: .5px;
+}
+
+.q0-9 {fill:none; stroke-width:2;stroke:#ffffcc}
+.q1-9 {fill:none; stroke-width:2;stroke:#ffeda0}
+.q2-9 {fill:none; stroke-width:2;stroke:#fed976}
+.q3-9 {fill:none; stroke-width:2;stroke:#feb24c}
+.q4-9 {fill:none; stroke-width:2;stroke:#fd8d3c}
+.q5-9 {fill:none; stroke-width:2;stroke:#fc4e2a}
+.q6-9 {fill:none; stroke-width:2;stroke:#e31a1c}
+.q7-9 {fill:none; stroke-width:2;stroke:#bd0026}
+.q8-9 {fill:none; stroke-width:2;stroke:#800026}
+.stroke {
+  fill: none;
+  stroke: #000;
+  stroke-width: 3px;
+}
+
+.fill {
+  fill: #081d58;
+}
+</style>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="//d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+<script src="//d3js.org/topojson.v1.min.js"></script>
+<script src='../../turf/turf.js'></script>
+<script>
+
+var quantize = d3.scale.quantize()
+    .domain([0, 35])
+    .range(d3.range(9).map(function(i) { return "q" + i + "-9"; }));
+    
+var colorMe = function(p) {
+    console.log(p);
+    return 'p';
+}
+var width = 960,
+    height = 960;
+
+var projection = d3.geo.mollweide()
+    .scale((width + 1) / 2 / Math.PI)
+    .translate([width / 2, height /2])
+    .precision(.1)
+    .rotate([0.38,-51.52]);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+var graticule = d3.geo.graticule();
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+var defs = svg.append("defs");
+
+defs.append("path")
+    .datum({type: "Sphere"})
+    .attr("id", "sphere")
+    .attr("d", path);
+
+defs.append("clipPath")
+    .attr("id", "clip")
+  .append("use")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "stroke")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "fill")
+    .attr("xlink:href", "#sphere");
+    
+svg.append("g").append("path")
+    .datum(graticule)
+    .attr("class", "graticule")
+    .attr("clip-path", "url(#clip)")
+    .attr("d", path);
+
+    
+d3.json("world-50m.json", function(error, world) {
+  if (error) throw error;
+
+  svg.append("g").insert("path", ".graticule")
+      .datum(topojson.feature(world, world.objects.land))
+      .attr("class", "land")
+      .attr("d", path);
+
+  svg.append("g").insert("path", ".graticule")
+      .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
+      .attr("class", "boundary")
+      .attr("d", path);
+});
+
+d3.select(self.frameElement).style("height", height + "px");
+var airports = {};
+var london = [492,502,503,507,548]; 
+var londoncenter = {lat:51.5287352,lon:-0.3817734}
+var destinations = [];
+var isolined;
+/* London airports:
+Lutton: 492, LTN
+Hatwick: 502, LGW
+City: 503, LCY
+Heathrow: 507, LHR
+Stansted: 548, STN
+*/
+
+queue()
+    .defer(d3.text, "airports.dat")
+    .defer(d3.csv,"dijkstra.csv")
+    .await(ready)
+
+function ready(error,airportext,flights) {
+    d3.csv.parseRows(airportext).forEach(function(row){
+      if (london.indexOf(parseInt(row[0]))>-1) {
+            airports["LONDON"] = {
+                airport: -1,
+                name: "London Airports",
+                iata: "LONDON",
+                lat: londoncenter.lat,
+                lon: londoncenter.lon,
+                height: parseFloat(row[8])
+            }
+        }
+        else {
+            airports[row[4]] = {
+                airport: parseInt(row[0]),
+                name: row[1],
+                iata: row[4],
+                lat: parseFloat(row[6]),
+                lon: parseFloat(row[7]),
+                height: parseFloat(row[8])
+            }
+        }
+    })
+    
+    destinations = flights.map(function(d){
+        var airport = airports[d.destination];
+        return {
+                type: 'Feature',
+                geometry: {
+                  type: 'Point',
+                  coordinates: [airport.lon,airport.lat]
+                },
+                properties:{
+                  destination: d.destination,
+                  route:d.route.split(','),
+                  time:parseFloat(d.length)+d.route.split(',').length*2,
+                  
+                }              
+            }
+    })
+    
+    var featurecollection = {
+      "type": "FeatureCollection",
+      "features": destinations
+    }
+    var breaks = [0, 2, 4,6,8,10,12,14,16,18,20, 22, 24, 26, 28, 30, 32, 34, 36,38,40,42,44,46,48,50];
+    isolined = turf.isolines(featurecollection, 'time', 180, breaks);
+    
+    svg.append("g").selectAll(".isochrone")
+      .data(isolined.features)
+      .enter().append("path",".isochrone")
+      .attr("class", function(d){
+        return quantize(d.properties.time)
+      })
+      .attr("d", path);
+
+
+     
+        
+}
+
+
+</script>

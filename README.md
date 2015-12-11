@@ -14,3 +14,10 @@ Links of note:
  * http://geo.gob.bo/blog/spip.php?article119
  * http://forobs.jrc.ec.europa.eu/products/gam
  * http://rocs.hu-berlin.de/
+ * https://github.com/GeographicaGS/GeodesicLinesToGIS
+ * https://pypi.python.org/pypi/GeodesicLinesToGIS/
+ 
+ Links on Dijkstra
+ * https://github.com/devenbhooshan/graph.js
+ * https://github.com/mburst/dijkstras-algorithm
+ * https://github.com/andrewhayward/dijkstra/blob/master/graph.js

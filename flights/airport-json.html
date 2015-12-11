@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="//d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+<script>
+
+var airports = [], destinations = [];
+
+var london = [492,502,503,507,548]; 
+var londoncenter = {lat:51.5287352,lon:-0.3817734}
+
+queue()
+    .defer(d3.text, "airports.dat")
+    .defer(d3.csv,"dijkstra.csv")
+    .await(ready)
+
+function ready(error,airportext,flights) {
+    airports = d3.csv.parseRows(airportext).map(function(row) {
+        //we want 1 london, so all london airports are remapped to the center of london
+        if (london.indexOf(parseInt(row[0]))>-1) {
+            return {
+                airport: -1,
+                name: "London Airports",
+                iata: "LONDON",
+                lat: londoncenter.lat,
+                lon: londoncenter.lon,
+                height: parseFloat(row[8])
+            }
+        }
+        else {
+            return {
+                airport: parseInt(row[0]),
+                name: row[1],
+                iata: row[4],
+                lat: parseFloat(row[6]),
+                lon: parseFloat(row[7]),
+                height: parseFloat(row[8])
+            }
+        }
+    });
+    destinations = flights.map(function(d){
+        var airport = airports.filter(function(a){return a.iata == d.destination})[0];
+        return {
+                "type":"Feature",
+                "geometry":{
+                    "type":"Point",
+                    "coordinates": [airport.lon,airport.lat]
+                },
+                "properties": {
+                    "destination": d.destination,
+                    "route":d.route.split(','),
+                    "time":parseFloat(d.length)+d.route.split(',').length*2
+                    }
+            }
+    })
+    var points = {
+      "type": "FeatureCollection",
+      "features":destinations
+    }
+     //print the CSV on the screen
+    d3.select("body").append("div")
+    .html(function(d){return JSON.stringify(points)})   
+}
+
+
+</script>
