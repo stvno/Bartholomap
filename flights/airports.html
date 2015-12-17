@@ -23,34 +23,52 @@
   stroke: red;
 }
 
-.q0-9 { fill:#ffffcc}
-.q1-9 { fill:#ffeda0}
-.q2-9 { fill:#fed976}
-.q3-9 { fill:#feb24c}
-.q4-9 { fill:#fd8d3c}
-.q5-9 { fill:#fc4e2a}
-.q6-9 { fill:#e31a1c}
-.q7-9 { fill:#bd0026}
-.q8-9 { fill:#800026}
 
+
+.lines.q0-9 {fill:none; stroke-width:2;stroke:#f03b20}
+.lines.q1-9 {fill:none; stroke-width:2;stroke:#feb24c}
+.lines.q2-9 {fill:none; stroke-width:2;stroke:#ffeda0}
+.lines.q3-9 {fill:none; stroke-width:2;stroke:#addd8e}
+.lines.q4-9 {fill:none; stroke-width:2;stroke:#7fcdbb}
+.lines.q5-9 {fill:none; stroke-width:2;stroke:#2c7fb8}
+
+
+circle.q0-9 {fill:#f03b20}
+circle.q1-9 {fill:#feb24c}
+circle.q2-9 {fill:#ffeda0}
+circle.q3-9 {fill:#addd8e}
+circle.q4-9 {fill:#7fcdbb}
+circle.q5-9 {fill:#2c7fb8}
+
+
+.stroke {
+  fill: none;
+  stroke: #000;
+  stroke-width: 3px;
+}
+
+.fill {
+  fill: #081d58;
+}
 </style>
 <body>
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script src="//d3js.org/queue.v1.min.js"></script>
 <script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
 <script src="//d3js.org/topojson.v1.min.js"></script>
+<script src='../../turf/turf.js'></script>
 <script>
 
-var quantize = d3.scale.quantize()
-    .domain([0, 35])
-    .range(d3.range(9).map(function(i) { return "q" + i + "-9"; }));
-    
+var quantize = d3.scale.threshold()
+    .domain([5.01,10.01,20.01,30.01,40.01])
+    .range(d3.range(6).map(function(i) { return "q" + i + "-9"; }));
+  
 var colorMe = function(p) {
     console.log(p);
     return 'p';
 }
-var width = 960,
-    height = 960;
+var width = 8000,
+    height = 8000;
 
 var projection = d3.geo.mercator()
     .scale((width + 1) / 2 / Math.PI)
@@ -62,17 +80,38 @@ var path = d3.geo.path()
 
 var graticule = d3.geo.graticule();
 
+
 var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
+var defs = svg.append("defs");
 
+defs.append("path")
+    .datum({type: "Sphere"})
+    .attr("id", "sphere")
+    .attr("d", path);
+
+defs.append("clipPath")
+    .attr("id", "clip")
+  .append("use")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "stroke")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "fill")
+    .attr("xlink:href", "#sphere");
+    
 svg.append("g").append("path")
     .datum(graticule)
     .attr("class", "graticule")
+    .attr("clip-path", "url(#clip)")
     .attr("d", path);
 
-    
-d3.json("world-50m.json", function(error, world) {
+      
+d3.json("../flights/world-50m.json", function(error, world) {
   if (error) throw error;
 
   svg.append("g").insert("path", ".graticule")
@@ -138,10 +177,29 @@ function ready(error,airportext,flights) {
                 lat:airport.lat
             }
     })
+    var destinationJson = destinations.map(function(d){
+      return {
+              "type": "Feature",
+                  "properties": {
+                    "time":d.time
+                  },
+                  "geometry": {
+                    "type": "Point",
+                    "coordinates": [d.lon,d.lat]
+                  }  
+          }
+    })
+
+    var breaks = [5,10,20,30,40,70,100]    
+    var isolined = turf.isolines({
+      "type": "FeatureCollection",
+      "features":destinationJson
+    }, 'time', 180, breaks);
+
     svg.append('g').selectAll(".pin")
           .data(destinations)
           .enter().append("circle", ".pin")
-          .attr("r", 3)
+          .attr("r", 2)
           .attr("class",function(d){return quantize(d.time)})
           .attr("transform", function(d) {
             return "translate(" + projection([
@@ -149,7 +207,13 @@ function ready(error,airportext,flights) {
               d.lat
             ]) + ")";
           });
-        
+
+    svg.append("g").selectAll(".isochrone")
+      .data(isolined.features)
+      .enter().append("path",".isochrone")      
+      .attr("class",function(d){return 'lines '+quantize(d.properties.time)})
+      .attr("d", path);
+
 }
 
 

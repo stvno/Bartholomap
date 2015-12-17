@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.graticule {
+  fill: none;
+  stroke: #777;
+  stroke-opacity: .5;
+  stroke-width: .5px;
+}
+
+.land {
+  fill: #222;
+}
+
+.boundary {
+  fill: none;
+  stroke: #fff;
+  stroke-width: .5px;
+}
+.arc {
+  fill: none;
+  stroke: red;
+}
+
+
+.q0-9 { fill:#f03b20}
+.q1-9 { fill:#feb24c}
+.q2-9 { fill:#ffeda0}
+.q3-9 { fill:#addd8e}
+.q4-9 { fill:#7fcdbb}
+.q5-9 { fill:#2c7fb8}
+
+.lines.q0-9 {fill:none; stroke-width:2;stroke:#f03b20}
+.lines.q1-9 {fill:none; stroke-width:2;stroke:#feb24c}
+.lines.q2-9 {fill:none; stroke-width:2;stroke:#ffeda0}
+.lines.q3-9 {fill:none; stroke-width:2;stroke:#addd8e}
+.lines.q4-9 {fill:none; stroke-width:2;stroke:#7fcdbb}
+.lines.q5-9 {fill:none; stroke-width:2;stroke:#2c7fb8}
+
+
+circle.q0-9 {fill:#f03b20}
+circle.q1-9 {fill:#feb24c}
+circle.q2-9 {fill:#ffeda0}
+circle.q3-9 {fill:#addd8e}
+circle.q4-9 {fill:#7fcdbb}
+circle.q5-9 {fill:#2c7fb8}
+
+
+.stroke {
+  fill: none;
+  stroke: #000;
+  stroke-width: 3px;
+}
+
+.fill {
+  fill: #081d58;
+}
+</style>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="//d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+<script src="//d3js.org/topojson.v1.min.js"></script>
+<script src='../../turf/turf.js'></script>
+<script>
+
+var quantize = d3.scale.threshold()
+    .domain([5,10,20,30,40])
+    .range(d3.range(6).map(function(i) { return "q" + i + "-9"; }));
+
+var colorMe = function(p) {
+    console.log(p);
+    return 'p';
+}
+var width = 800,
+    height = 800;
+
+var projection = d3.geo.mercator()
+    .scale((width + 1) / 2 / Math.PI)
+    .translate([width / 2, height / 2])
+    .precision(.1);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+var graticule = d3.geo.graticule();
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+var defs = svg.append("defs");
+
+defs.append("path")
+    .datum({type: "Sphere"})
+    .attr("id", "sphere")
+    .attr("d", path);
+
+defs.append("clipPath")
+    .attr("id", "clip")
+  .append("use")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "stroke")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "fill")
+    .attr("xlink:href", "#sphere");
+    
+svg.append("g").append("path")
+    .datum(graticule)
+    .attr("class", "graticule")
+    .attr("clip-path", "url(#clip)")
+    .attr("d", path);
+
+      
+d3.json("../flights/world-50m.json", function(error, world) {
+  if (error) throw error;
+
+  svg.append("g").insert("path", ".graticule")
+      .datum(topojson.feature(world, world.objects.land))
+      .attr("class", "land")
+      .attr("d", path);
+
+  svg.append("g").insert("path", ".graticule")
+      .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
+      .attr("class", "boundary")
+      .attr("d", path);
+});
+
+d3.select(self.frameElement).style("height", height + "px");
+var airports = [];
+var london = [492,502,503,507,548]; 
+var londoncenter = {lat:51.5287352,lon:-0.3817734}
+var result;
+var cities = [];
+var isolined;
+/* London airports:
+Lutton: 492, LTN
+Hatwick: 502, LGW
+City: 503, LCY
+Heathrow: 507, LHR
+Stansted: 548, STN
+*/
+var southPole = {NAME :'AmundseniScott South Pole Station', time: 8, airport:'PUQ'};
+var boatplaces = {ADM0_A3 : ['ATA','SGS'], NAME : ['Atafu','Neiafu','Raoul Island Station','Waitangi','Provideniya','Uelen','Mys Shmidta','Egvekinot']};
+
+
+
+/* great circle distance per
+http://www.movable-type.co.uk/scripts/latlong.html
+speed = m/h
+*/
+
+Number.prototype.toRadians = function() {
+   return this * Math.PI / 180;
+}
+
+var ArcTime = function(begin,end,speed) {
+    var lat1 = begin.lat;
+    var lat2 = end.lat;
+    var lon1 = begin.lon;
+    var lon2 = end.lon;
+
+    var R = 6371000; // metres
+    var φ1 = lat1.toRadians();
+    var φ2 = lat2.toRadians();
+    var Δφ = (lat2-lat1).toRadians();
+    var Δλ = (lon2-lon1).toRadians();
+
+    var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    var d = R * c;
+    return d/speed;
+}
+
+
+queue()
+    .defer(d3.csv, "places.csv")    
+    .defer(d3.json, "../flights/airports.json")    
+    .await(ready)
+
+function ready(error,places,airport) {
+  //airport,time,valid,lat,lon,name,timetoairport 
+    cities = places.map(function(row) {
+        if(row.valid == "true") {
+          return {
+              "type": "Feature",
+                  "properties": {
+                    "airport": row.airport,
+                    "name": row.NAME,                  
+                    "time":parseFloat(row.time)
+                  },
+                  "geometry": {
+                    "type": "Point",
+                    "coordinates": [parseFloat(row.LONGITUDE),parseFloat(row.LATITUDE)]
+                  }  
+          }
+        }
+       /* else {
+            if(row.NAME == southPole.NAME) {
+              //Southpole
+              console.log('southpole')
+              var puq = airport.features.filter(function(d){if(d&&d.properties) return d.properties.destination=="PUQ"})[0]
+               return {
+                    "type": "Feature",
+                        "properties": {
+                          "airport": 'PUQ',
+                          "name": row.NAME,                  
+                          "time":puq.time+southPole.time
+                        },
+                        "geometry": {
+                          "type": "Point",
+                          "coordinates": [parseFloat(row.LONGITUDE),parseFloat(row.LATITUDE)]
+                        }  
+                }
+            }
+            else if (boatplaces.NAME.indexOf(row.NAME)>-1 || boatplaces.ADM0_A3.indexOf(row.ADM0_A3)>-1){
+              //coast, let's float
+              console.log('boat')
+              var start = airport.features.filter(function(d){if(d&&d.properties) return d.properties.destination==row.airport})[0]
+              var time = ArcTime({lat:start.geometry.coordinates[1],lon:start.geometry.coordinates[0]},{lat:parseFloat(row.LATITUDE),lon:parseFloat(row.LONGITUDE)},25000); //25km/h
+               return {
+                    "type": "Feature",
+                        "properties": {
+                          "airport": row.airport,
+                          "name": row.NAME,                  
+                          "time":start.properties.time+time
+                        },
+                        "geometry": {
+                          "type": "Point",
+                          "coordinates": [parseFloat(row.LONGITUDE),parseFloat(row.LATITUDE)]
+                        }  
+                }
+            }
+            else {
+              //land, let's walk
+              console.log('walk')
+              var start = airport.features.filter(function(d){if(d&&d.properties) return d.properties.destination==row.airport})[0]
+              var time = ArcTime({lat:start.geometry.coordinates[1],lon:start.geometry.coordinates[0]},{lat:parseFloat(row.LATITUDE),lon:parseFloat(row.LONGITUDE)},5000); //5km/h
+               return {
+                    "type": "Feature",
+                        "properties": {
+                          "airport": row.airport,
+                          "name": row.NAME,                  
+                          "time":start.properties.time+time
+                        },
+                        "geometry": {
+                          "type": "Point",
+                          "coordinates": [parseFloat(row.LONGITUDE),parseFloat(row.LATITUDE)]
+                        }  
+                }
+            }
+
+        }*/
+    
+    });
+    cities.forEach(function(d){if(d)airport.features.push(d)})
+    result = airport;
+//quantiles
+//  var breaks = [0,7,12,15,17,19,21,24,110];
+  var breaks = [0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,100];
+ //   var breaks = [5,10,20,30,40]
+ // isolined = turf.isolines(airport, 'time', 180, breaks);
+
+svg.append('g').selectAll(".pin")
+          .data(airport.features)
+          .enter().append("circle", ".pin")
+          .attr("r", 2)
+          .attr("class",function(d){return quantize(d.properties.time)})
+          .attr("transform", function(d) {
+            return "translate(" + projection([
+              d.geometry.coordinates[0],
+              d.geometry.coordinates[1]
+            ]) + ")";
+          });
+
+ /*  svg.append("g").selectAll(".isochrone")
+      .data(isolined.features)
+      .enter().append("path",".isochrone")      
+      .attr("class",function(d){return 'lines '+quantize(d.properties.time)})
+      .attr("d", path);
+*/
+  /*svg.append('g').selectAll(".pin")
+          .data(airport.features)
+          .enter().append("circle", ".pin")
+          .attr("r", 3)
+          .attr("class",function(d){return quantize(d.properties.time)})
+          .attr("transform", function(d) {
+            return "translate(" + projection([
+              d.geometry.coordinates[0],
+              d.geometry.coordinates[1]
+            ]) + ")";
+          });
+ /*   svg.append('g').selectAll(".pin")
+          .data(places.features)
+          .enter().append("circle", ".pin")
+          .attr("r", 3)
+          .attr("class",'city')
+          .attr("transform", function(d) {
+            return "translate(" + projection([
+              d.geometry.coordinates[0],
+              d.geometry.coordinates[1]
+            ]) + ")";
+          });*/
+
+   
+}
+
+
+</script>

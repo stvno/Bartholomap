@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="//d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+<script src="//d3js.org/topojson.v1.min.js"></script>
+<script src='../../turf/turf.js'></script>
+<script>
+
+var airports = [];
+var london = [492,502,503,507,548]; 
+var londoncenter = {lat:51.5073122,lon:-0.128033}
+var destinations = [];
+var places = [];
+
+var osrm = [];
+var psubset = [];
+
+var noflight = {};
+var allairports = {};
+var nonstopairports = {};
+var onestopairports = {};
+var twostopairports ={};
+/* London airports:
+Lutton: 492, LTN
+Hatwick: 502, LGW
+City: 503, LCY
+Heathrow: 507, LHR
+Stansted: 548, STN
+*/
+
+queue(3)
+    .defer(d3.json, "populated_places.geojson")    
+    .defer(d3.text, "../flights/airports.dat")
+    .defer(d3.csv,"../flights/dijkstra.csv")
+    .await(ready)
+
+function ready(error,steden,airportext,flights) {
+  places = steden;
+  airports = d3.csv.parseRows(airportext).map(function(row) {
+    //we want 1 london, so all london airports are remapped to the center of london
+   
+      return {
+        airport: parseInt(row[0]),
+        name: row[1],
+        iata: row[4],
+        lat: parseFloat(row[6]),
+        lon: parseFloat(row[7]),
+        height: parseFloat(row[8])
+      }
+  });
+
+  destinations = flights.map(function(d){
+    var airport = airports.filter(function(a){return a.iata == d.destination})[0];
+    if(d.destination== "LONDON") {
+      return {
+        "type": "Feature",
+        "properties": {
+          "destination": d.destination,
+          "route":d.route.split(','),
+          "time":0,
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [londoncenter.lon, londoncenter.lat]
+        }                
+      }
+    }
+    else {
+      return {
+        "type": "Feature",
+        "properties": {
+          "destination": d.destination,
+          "route":d.route.split(','),
+          "time":parseFloat(d.length)+d.route.split(',').length*2,
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [airport.lon, airport.lat]
+        }                
+      }
+    }
+  })
+  allairports = { "type": "FeatureCollection", "features":destinations}
+  noflight = { "type": "FeatureCollection", "features":destinations.filter(function(d){return d.properties.route.length==1}) }//LONDON
+  nonstopairports = { "type": "FeatureCollection", "features":destinations.filter(function(d){return d.properties.route.length==2})}//begin,end
+  onestopairports = { "type": "FeatureCollection", "features":destinations.filter(function(d){return d.properties.route.length==3})}//begin,stop,end
+  twostopairports = { "type": "FeatureCollection", "features":destinations.filter(function(d){return d.properties.route.length==4})}//begin,stop,stop,end
+     
+  
+  /*places.features.forEach(function(d){
+
+    if(i<2) {
+      //i++;
+    var nearest = turf.nearest(d,allairports);
+    var nearestnonstop = turf.nearest(d,nonstopairports);
+    var nearestonestop = turf.nearest(d,onestopairports);
+    var nearesttwostop = turf.nearest(d,twostopairports);
+    d.properties.allairport = nearest.properties.destination;
+    d.properties.alltime = nearest.properties.time;
+    d.properties.nonairport = nearestnonstop.properties.destination;
+    d.properties.nontime = nearestnonstop.properties.time;
+    d.properties.oneairport = nearestonestop.properties.destination;
+    d.properties.onetime = nearestonestop.properties.time;
+    d.properties.twoairport = nearesttwostop.properties.destination;
+    d.properties.twotime = nearesttwostop.properties.time;
+    d3.json( CreateUrl(d,nearest),function(err,pad){
+      if(err) {
+        d.properties.alltimetotal = null;
+        d.properties.all = true;
+      }
+      else {
+        if(pad.route_summary) {
+          d.properties.alltimetoairport = parseInt(pad.route_summary.total_time)/60/60;
+          d.properties.alltimetotal= d.properties.alltime+d.properties.alltimetoairport ;
+        }
+        else {
+          d.properties.alltimetotal = null;
+
+
+        }
+        d.properties.all = true;
+        if(d.properties.all&&d.properties.non&&d.properties.one&&d.properties.two) {
+           var min = d3.min([d.properties.alltimetotal,d.properties.nontimetotal,d.properties.onetimetotal,d.properties.twotimetotal])
+            if(min===undefined) d.properties.valid = false;
+            else {
+              d.properties.time = min;
+              d.properties.valid = true;
+            }
+            osrm.push(d);
+        }
+      }
+    })
+    d3.json( CreateUrl(d,nearestnonstop),function(err,pad){
+      if(err) {
+        d.properties.nontimetotal = null;
+        d.properties.non = true;
+      }
+      else {
+        if(pad.route_summary) {
+          d.properties.nontimetoairport = parseInt(pad.route_summary.total_time)/60/60;
+          d.properties.nontimetotal = d.properties.nontime +d.properties.nontimetoairport ;
+
+        }
+        else {
+          d.properties.nontimetotal = null;
+        }
+        d.properties.non = true;
+        if(d.properties.all&&d.properties.non&&d.properties.one&&d.properties.two) {
+           var min = d3.min([d.properties.alltimetotal,d.properties.nontimetotal,d.properties.onetimetotal,d.properties.twotimetotal])
+            if(min===undefined) d.properties.valid = false;
+            else {
+              d.properties.time = min;
+              d.properties.valid = true;
+            }
+            osrm.push(d);
+        }
+      }
+    })
+    d3.json( CreateUrl(d,nearestonestop),function(err,pad){
+      if(err) {
+        d.properties.onetimetotal = null;
+        d.properties.one = true;
+      }
+      else {
+        if(pad.route_summary) {
+          d.properties.onetimetoairport = parseInt(pad.route_summary.total_time)/60/60;
+          d.properties.onetimetotal =d.properties.onetime +d.properties.onetimetoairport ;
+        }
+        else {
+          d.properties.onetimetotal = null;
+        }
+        d.properties.one = true;
+        if(d.properties.all&&d.properties.non&&d.properties.one&&d.properties.two) {
+           var min = d3.min([d.properties.alltimetotal,d.properties.nontimetotal,d.properties.onetimetotal,d.properties.twotimetotal])
+            if(min===undefined) d.properties.valid = false;
+            else {
+              d.properties.time = min;
+              d.properties.valid = true;
+            }
+            osrm.push(d);
+        }
+      }
+    })
+    d3.json( CreateUrl(d,nearesttwostop),function(err,pad){
+      if(err) {
+        d.properties.twotimetotal = null;
+        d.properties.two = true;
+      }
+      else {
+        if(pad.route_summary) {
+          d.properties.twotimetoairport = parseInt(pad.route_summary.total_time)/60/60;
+          d.properties.twotimetotal=d.properties.twotime +d.properties.twotimetoairport ;
+        }
+        else {
+          d.properties.twotimetotal = null;
+        }
+        d.properties.two = true;
+        if(d.properties.all&&d.properties.non&&d.properties.one&&d.properties.two) {
+           var min = d3.min([d.properties.alltimetotal,d.properties.nontimetotal,d.properties.onetimetotal,d.properties.twotimetotal])
+            if(min===undefined) d.properties.valid = false;
+            else {
+              d.properties.time = min;
+              d.properties.valid = true;
+            }
+            osrm.push(d);
+        }
+      }
+    })
+    }
+  })*/
+}
+
+function CreateUrl(begin,end) {  
+  var parts = end.map(function(d){return 'loc='+d.geometry.coordinates[1]+','+d.geometry.coordinates[0]});
+  //return 'http://router.project-osrm.org/viaroute?loc='+begin.geometry.coordinates[1]+','+begin.geometry.coordinates[0]+'&loc='+end.geometry.coordinates[1]+','+end.geometry.coordinates[0]+'&geometry=false';
+  return 'http://router.project-osrm.org/table?loc='+begin.geometry.coordinates[1]+','+begin.geometry.coordinates[0]+'&'+parts.join('&');
+}
+function wait(ms){
+   var start = new Date().getTime();
+   var end = start;
+   while(end < start + ms) {
+     end = new Date().getTime();
+  }
+}
+function PrintCSV (){
+  var result = osrm.map(function(d){
+    var airport = null;
+    if(d.properties.time == d.properties.alltimetotal) airport = d.properties.allairport
+    else if(d.properties.time == d.properties.nontimetotal) airport = d.properties.nonairport
+    else if(d.properties.time == d.properties.onetimetotal) airport = d.properties.oneairport
+    else if(d.properties.time == d.properties.twotimetotal) airport = d.properties.twoairport
+    return {      
+      valid: d.properties.valid,
+      lat: d.properties.latitude,
+      lon: d.properties.longitude,
+      name: d.properties.name,
+      adm: d.properties.adm0_a3,
+      airport: airport,
+      allairport: d.properties.allairport, 
+      alltime: d.properties.alltimetotal,
+      nonairport: d.properties.nonairport,
+      nontime: d.properties.nontimetotal,
+      oneairport: d.properties.oneairport,
+      onetime: d.properties.onetimetotal,
+      twoairport: d.properties.twoairport,
+      twotime: d.properties.twotimetotal,
+      time: d.properties.time
+    }
+  })
+  d3.select("body").append("div")
+  .html(function(d){return d3.csv.format(result)})
+}
+function PrintJSON(){
+    //wait untill the osrm is filled and run this one
+    //print the JSON on the screen
+  var result = { "type": "FeatureCollection", "features":osrm}
+  d3.select("body").append("div")
+  .html(function(d){return JSON.stringify(result)})
+}
+function Batch(nr){
+  var l = Math.floor(places.features.length/4)
+  if(nr == 0 ) {
+    psubset = places.features.slice(0,l)
+  }
+  else if (nr == 1) {
+    psubset = places.features.slice(l,2*l)
+  }
+  else if (nr ==2 ){
+    psubset = places.features.slice(2*l,3*l)
+  }
+  else if (nr ==3 ) {
+    psubset = places.features.slice(3*l)
+  }
+  psubset.forEach(function(d){
+    var nearest = turf.nearest(d,allairports);
+    var nearestnoflight = turf.nearest(d,noflight);
+    var nearestnonstop = turf.nearest(d,nonstopairports);
+    var nearestonestop = turf.nearest(d,onestopairports);
+    var nearesttwostop = turf.nearest(d,twostopairports);
+    var dnf = turf.distance(d,nearestnoflight);
+    var d0 =  turf.distance(d,nearestnonstop);
+    var d1 =  turf.distance(d,nearestonestop);
+    var d2 =  turf.distance(d,nearesttwostop);
+    var locs = [nearest];
+    var tablevalues = [{airport:nearest.properties.destination,time:nearest.properties.time}]
+    d.properties.allairport = nearest.properties.destination;
+    d.properties.alltime = nearest.properties.time;
+    if(dnf < 1000) {
+      locs.push(nearestnoflight);
+      tablevalues.push({airport:nearestnoflight.properties.destination,time:nearestnoflight.properties.time})
+      d.properties.noflightght = nearestnoflight.properties.destination;
+      d.properties.noflighttime = nearestnoflight.properties.time;    
+
+    }
+    if(d0 < 1000) {
+      locs.push(nearestnonstop);
+      tablevalues.push({airport:nearestnonstop.properties.destination,time:nearestnonstop.properties.time})
+      d.properties.nonairport = nearestnonstop.properties.destination;
+      d.properties.nontime = nearestnonstop.properties.time;    
+    }
+    if(d1 < 1000) {
+      locs.push(nearestonestop);
+      tablevalues.push({airport:nearestonestop.properties.destination,time:nearestonestop.properties.time})
+      d.properties.oneairport = nearestonestop.properties.destination;
+      d.properties.onetime = nearestonestop.properties.time;
+    }
+    if(d2 < 1000) {
+      locs.push(nearesttwostop);
+      tablevalues.push({airport:nearesttwostop.properties.destination,time:nearesttwostop.properties.time})
+      d.properties.twoairport = nearesttwostop.properties.destination;
+      d.properties.twotime = nearesttwostop.properties.time;
+    }
+    d.properties.tablevalues = tablevalues;
+    
+    
+    d3.json( CreateUrl(d,locs),function(err,table){
+        if(err) {
+          d.properties.valid = false;
+        }
+        else {        
+          d.properties.valid = false;
+          d.properties.airport = d.properties.tablevalues[0].airport; //nearest airport
+          var traveltimes =table.distance_table[0].slice(1) 
+          var min = d3.min(traveltimes);
+          if(min>0&&min<120*60*60*10) { //both extremes require some thought
+            for(var i=0;i<traveltimes.length;i++) {
+              traveltimes[i] = traveltimes[i]/60/60/10 + d.properties.tablevalues[i].time;
+            }
+            var mintime = d3.min(traveltimes);
+            for (var i = 0; i < traveltimes.length; i++) {
+              if(traveltimes[i] == mintime) {
+                 d.properties.airport = d.properties.tablevalues[i].airport;
+                 d.properties.time = traveltimes[i];
+                 d.properties.traveltime = traveltimes[i] - d.properties.tablevalues[i].time;
+                 d.properties.valid = true;
+              }
+            };
+          }
+          osrm.push(d);
+        }
+    });
+  });
+}
+</script>

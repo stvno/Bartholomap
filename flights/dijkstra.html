@@ -7,23 +7,13 @@
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script src="dijkstras.js"></script>
 <script>
-console.warn('Note; this is a very very slow process (hours), you are better of using the finished dijkstra.csv, it takes a few hours on a i7-5500u')
+console.warn('Note; this is a very very slow process, you are better of using the finished dijkstra.csv, it takes a few hours on a i7-5500u')
 //series of globals
 var graph = new Graph(); //The graph for dijkstra
 var airports = []; //List of all airports incl. lat/lon
 var mynodes = {}; //Object with all destinations
 var shortestroutes = [];  //List of the shortest routes from London to each destination
 var one = 0; //helper to see progress in the console
-
-/* London airports:
-Lutton: 492, LTN
-Hatwick: 502, LGW
-City: 503, LCY
-Heathrow: 507, LHR
-Stansted: 548, STN
-*/
-var london = [492,502,503,507,548];
-var londoncenter = {lat:51.5287352,lon:-0.3817734}
 
 //read airports.dat and store it in airports
 //airport id (ofl), name, city, country, iata/faa, icao, lat, long, altitude, timezone, dst, tz
@@ -58,6 +48,7 @@ var calculateLength = function(route,timetable){
 //beginlat,beginlon,endlat,endlon,flighttime,source,dest,start,end,valid
 d3.csv("time.csv",
 function(d){
+    //Parse the CSV properly
     return {
         valid: JSON.parse(d.valid),
         begin: d.start,
@@ -66,6 +57,7 @@ function(d){
         }
     },
 function(data){
+    //Create an object with 
     data.forEach(function(a){
         if(a.valid) {
             if(mynodes[a.begin]===undefined) mynodes[a.begin] = {};

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.graticule {
+  fill: none;
+  stroke: #777;
+  stroke-opacity: .5;
+  stroke-width: .5px;
+}
+
+.land {
+  fill: #e0f3db;
+
+}
+.glow {
+    stroke: #636363;
+  stroke-width: 5px;
+}
+.glow2 {
+    stroke: white;
+  stroke-width: 10px;
+}
+.coast {
+  fill: none;
+  stroke: black;
+  stroke-width: 0.5px;
+}
+
+
+.h05 { fill:rgba(240,59,32,0.8);stroke:rgb(99,99,99);stroke-dasharray:2,1;stroke-width:0.5;}
+.h10 { fill:rgba(254,178,76,0.8);stroke:rgb(99,99,99);stroke-dasharray:2,1;stroke-width:0.5;}
+.h20 { fill:rgba(255,237,160,0.8);stroke:rgb(99,99,99);stroke-dasharray:2,1;stroke-width:0.5;}
+.h30 { fill:rgba(173,221,142,0.8);stroke:rgb(99,99,99);stroke-dasharray:2,1;stroke-width:0.5;}
+.h40 { fill:rgba(127,205,187,0.8);stroke:rgb(99,99,99);stroke-dasharray:2,1;stroke-width:0.5;}
+.h50 { fill:rgba(44,127,184,0.8);stroke:rgb(99,99,99);stroke-dasharray:2,1;stroke-width:0.5;}
+
+.stroke {
+  fill: none;
+  stroke: #000;
+  stroke-width: 3px;
+}
+
+.fill {
+  fill: #eeeeec;
+}
+</style>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="//d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+<script src="//d3js.org/topojson.v1.min.js"></script>
+<script>
+
+var quantize = d3.scale.threshold()
+    .domain([5.01,10.01,20.01,30.01,40.01])
+    .range(d3.range(6).map(function(i) { return "q" + i + "-9"; }));
+
+var colorMe = function(p) {
+    console.log(p);
+    return 'p';
+}
+var width = 900,
+    height = 900;
+
+var projection = d3.geo.times()
+    .scale((width + 1) / 2 / Math.PI)
+    .translate([width / 2, height / 2])
+    .precision(.1);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+var graticule = d3.geo.graticule();
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+var defs = svg.append("defs");
+
+defs.append("path")
+    .datum({type: "Sphere"})
+    .attr("id", "sphere")
+    .attr("d", path);
+
+defs.append("clipPath")
+    .attr("id", "clip")
+  .append("use")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "stroke")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "fill")
+    .attr("xlink:href", "#sphere");
+    
+
+
+      
+
+
+d3.select(self.frameElement).style("height", height + "px");
+
+
+queue()
+    .defer(d3.json, "flights/world-50m.json")    
+    .defer(d3.json, "data/05hour.geojson")    
+    .defer(d3.json, "data/10-05.geojson")    
+    .defer(d3.json, "data/20-10.geojson")    
+    .defer(d3.json, "data/30-20.geojson")    
+    .defer(d3.json, "data/40-30.geojson")    
+    .defer(d3.json, "data/50-40.geojson")    
+    .await(ready)
+
+function ready(error,world,vijf,tien,twintig,dertig,veertig,vijftig) {
+  svg.append("g").insert("path", ".graticule")
+    .datum(topojson.feature(world, world.objects.land))
+    .attr("class", "glow2")
+    .attr("d", path);
+  svg.append("g").insert("path", ".graticule")
+    .datum(topojson.feature(world, world.objects.land))
+    .attr("class", "glow")
+    .attr("d", path);    
+  svg.append("g").insert("path", ".graticule")
+    .datum(topojson.feature(world, world.objects.land))
+    .attr("class", "land")
+    .attr("d", path);
+  svg.append("g").insert("path", ".isochrone")
+    .datum(vijftig)
+    .attr("class",'h50')
+    .attr("d", path);
+  svg.append("g").insert("path", ".isochrone")
+    .datum(veertig)
+    .attr("class",'h40')
+    .attr("d", path);
+ svg.append("g").insert("path", ".isochrone")
+    .datum(dertig)
+    .attr("class",'h30')
+    .attr("d", path);
+  svg.append("g").insert("path", ".isochrone")
+    .datum(twintig)
+    .attr("class",'h20')
+    .attr("d", path); 
+  svg.append("g").insert("path", ".isochrone")
+    .datum(tien)
+    .attr("class",'h10')
+    .attr("d", path);       
+  svg.append("g").insert("path", ".isochrone")
+    .datum(vijf)
+    .attr("class",'h05')
+    .attr("d", path); 
+  svg.append("g").insert("path", ".graticule")
+    .datum(topojson.feature(world, world.objects.land))
+    .attr("class", "coast")
+    .attr("d", path);
+svg.append("g").append("path")
+    .datum(graticule)
+    .attr("class", "graticule")
+    .attr("clip-path", "url(#clip)")
+    .attr("d", path);
+}
+
+
+
+</script>

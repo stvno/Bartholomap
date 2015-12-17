@@ -6,7 +6,9 @@
 <script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script>
-console.warn('Note; this is a slow process (minutes), you are better of using the finished time.csv, it takes a few hours on a i7-5500u')
+console.warn('Note; this is a slow process (minutes), you are better of using the finished time.csv')
+var starttime = +new Date();
+console.log(+new Date()-starttime);
 //series of globals
 var airports = [];
 var routes = [];
@@ -14,14 +16,21 @@ var firstorder = [];
 var directflights = {};
 var distances = [];
 /* London airports:
-Lutton: 492, LTN
-Hatwick: 502, LGW
-City: 503, LCY
-Heathrow: 507, LHR
-Stansted: 548, STN
+Lutton: 492, LTN 51.874722,-0.368333,
+Hatwick: 502, LGW 51.148056,-0.190278
+City: 503, LCY 51.505278,0.055278
+Heathrow: 507, LHR 51.4775,-0.461389
+Stansted: 548, STN 51.885,0.235
 */
 var london = [492,502,503,507,548]; 
-var londoncenter = {lat:51.5287352,lon:-0.3817734}
+var LND = [
+    {iata:'LTN',lat:51.874722,lon:-0.368333,id:492},
+    {iata:'LGW',lat:51.148056,lon:-0.190278,id:502},
+    {iata:'LCY',lat:51.505278,lon:0.055278,id:503},
+    {iata:'LHR',lat:51.4775,lon:-0.461389,id:507}, 
+    {iata:'STN',lat:51.885,lon:0.235,id:548}
+    ]
+var londoncenter = {lat:51.5073122,lon:-0.128033}
 
 /* great circle distance per
 http://www.movable-type.co.uk/scripts/latlong.html
@@ -31,12 +40,11 @@ Number.prototype.toRadians = function() {
    return this * Math.PI / 180;
 }
 
-var ArcTime = function(begin,end) {
+var ArcTime = function(begin,end,speed) {
     var lat1 = begin.lat;
     var lat2 = end.lat;
     var lon1 = begin.lon;
-    var lon2 = end.lon;
-    var speed = 600000; //(600km/h)
+    var lon2 = end.lon;    
 
     var R = 6371000; // metres
     var φ1 = lat1.toRadians();
@@ -79,6 +87,7 @@ d3.text("airports.dat", function(text) {
         }
     }
   });
+    console.log('airports.dat: ',+new Date()-starttime);
 });
 
 
@@ -103,6 +112,7 @@ d3.text("routes.dat", function(text) {
     }
     return rij;
   });
+  console.log('routes.dat: ',+new Date()-starttime);
   routes = data.map(function(d){
     var a = airports.filter(function(e){return e.iata == d.source})
     var t = airports.filter(function(e){return e.iata == d.destination})
@@ -112,7 +122,7 @@ d3.text("routes.dat", function(text) {
             beginlon: a[0].lon,
             endlat: t[0].lat,
             endlon: t[0].lon,
-            flighttime: ArcTime(a[0],t[0]),
+            flighttime: ArcTime(a[0],t[0],600000),
             source:d.sourceid,
             dest:d.destinationid,
             start:d.source,
@@ -135,7 +145,23 @@ d3.text("routes.dat", function(text) {
             }
         }
    });  
-  
+   console.log('routes: ',+new Date()-starttime);
+   //The 5 London airports are missing from the list, add them with a traveltime of 0
+   LND.forEach(function (d) {
+       routes.push({
+            beginlat: londoncenter.lat,
+            beginlon: londoncenter.lon,
+            endlat: d.lat,
+            endlon: d.lon,
+            flighttime: 0,
+            source:-1,
+            dest:d.id,
+            start:'LONDON',
+            end:d.iata,
+            valid: true
+        })
+   })
+   console.log('LND: ',+new Date()-starttime);
   //print the CSV on the screen
   d3.select("body").append("div")
   .html(function(d){return d3.csv.format(routes)})

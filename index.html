@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+<link href='https://fonts.googleapis.com/css?family=Dancing+Script|Overlock' rel='stylesheet' type='text/css'>
+<style>
+#content {
+max-width: 850px;
+margin-left:40px;
+
+}
+* {font-family: 'Overlock', sans-serif;}
+body, html {margin: 0;padding: 0;}
+h1,h2,h3{font-family: 'Dancing Script', cursive;}
+h1 {
+    padding: 0.2em;
+    margin-left:-40px;
+    margin-bottom:5px;
+   
+}
+h2 {
+	margin: 0px 0em 0.3em 0em;
+	padding:1em 0.2em 0.2em 0.2em;
+	border-bottom: solid 1px  rgba(49,130,189,0.1);
+}
+h3 {
+	font-size: smaller;
+}
+div {
+	padding: 0.2em;
+	margin: 5px;
+}
+
+.caption {
+	font-size:smaller;
+	color: grey;
+	margin-bottom: 10px;
+	margin-top:-5px;
+}
+img {
+	margin-top:10px;
+	margin-bottom: 10px;
+	border:solid 1px rgba(157,157,157,0.2);
+	padding:5px;
+}
+.legend span{
+	
+	display: inline-block;
+	padding:5px;
+	border: solid 1px rgb(57,57,57);
+}
+.nul {background:#f03b20}
+.vijf {background:#feb24c}
+.tien {background:#ffeda0}
+.twintig{background:#addd8e}
+.dertig{background:#7fcdbb}
+.veertig{background:#2c7fb8}
+a {
+ color: black;
+ border-bottom: solid 2px rgba(49,130,189,0.2);
+ text-decoration:none;
+ }
+a:hover {
+ border-bottom: solid 2px rgba(49,130,189,0.6);
+ }
+a:visited {
+ border-bottom: solid 1px rgba(49,130,189,0.1);
+ }
+.img a{
+ 	border: none !important;
+}
+
+</style>
+</head>
+<body>
+<div id="content">
+<h1>Bartholomap project</h1>
+<div>
+A while ago I read an article in <a href="http://www.intelligentlifemagazine.com/places/cartophilia/time-travel">Intelligent Life</a> about a hundred year old map that showed how long it took to travel from London to anywhere on the globe. The map, made before airtravel was common, show the influence of shipping routes and intercontinental railways. Within a month you could travel to all but the most remote and landlocked places.
+</div>
+<div class="img">
+<a href="img/map.jpg"><img src="img/map-thumb.jpg"/></a>
+<div class="caption">An isochronic map created by John George Bartholomew showing various travel times from London in 1914 Photo: RGS/Intelligent Life</div>
+</div>
+<h2>Air travel map</h2>
+<div>
+Since that map was created the world has changed, and I was wondering how such a map would look like if it was created today. Since airtravel is the popular choice for long distance travel I decided to start with that. The <a href="http://openflights.org/data.html">OpenFlights</a> project provides a list of airport-locations and flight-routes. Taking London as a starting point and using 600km/h as travelspeed it was fairly easy to calculate the time it takes to get to each of the ~3000 airports in the list. <a href="">TBD: link naar github</a>. Since contemporary travel is so much faster I changed the scale from days to hours:
+</div>
+<div>
+<span class="legend"><span class="nul">within 5 hours</span><span class="vijf">5 to 10 hours</span><span class="tien">10 to 20 hours</span><span class="twintig">20 to 30 hours</span><span class="dertig">30 to 40 hours</span><span class="veertig">over 40 hours</span>
+
+</div>
+<div class="img">
+<a href="img/airports.png"><img src="img/airports.png" width="300px" height="300px"/></a>
+<a href="img/airports-lines.png"><img src="img/airports-lines.png" width="300px" height="300px"/></a>
+</div>
+<div class="caption">Map of all airports as ±3000 dots classified by travel time (left) and as isochronic lines (right)</div>
+<h2>Enhance with OSRM</h2>
+<div>
+However as any traveler knows, being at the airport doesn't mean that you have arrived. To further the resolution of the isochronic map I used the 7000 places from <a href="http://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-populated-places/">Natural Earth Data</a> to calculate the travel time to actual places. For each place I looked up the nearest airport <a href="">TBD: link naar github</a> and ran the two coordinates against the <a href="http://project-osrm.org/">Open Source Routing Machine</a>. The resulting maps have more detail, but since only about half of the places were routable we still have some work to do.
+</div>
+<div class="img">
+<a href=="img/airports-places.png"><img src="img/airports-places.png" width="300px" height="300px"/></a>
+<a href="img/airports-places-lines.png"><img src="img/airports-places-lines.png" width="300px" height="300px"/></a>
+</div>
+<div class="caption">Map of all airports and routable places as ±8000 dots classified by travel time (left) and as isochronic lines (right)</div>
+<h2>As the crow flies</h2>
+<div>For about 3000 places which did not get a result from the previous exercise, I decided to divide them into landlocked and coastal cities. (This could be done way more advanced, but I just looked on the map and made a judgement call). For both types of places I calculated the straight line distance (using <a href="http://www.movable-type.co.uk/scripts/latlong.html">great arc</a> distance) and decided upon 5km/h as landspeed and 25km/h for water. This way I had the traveltime from London to more than ten thousand places around the globe.</div>
+<div class="img">
+<a href="img/everything.png"><img src="img/everything.png"width="300px" height="300px"/></a>
+<a href="img/everything-lines.png"><img src="img/everything-lines.png"width="300px" height="300px"/></a>
+</div>
+<div class="caption">Map of all airports and places as ±10000 dots classified by travel time (left) and as isochronic lines (right)</div>
+<h2>Manual labour</h2>
+<div>This is as far as the automated process can go. John George Bartholomew created his map by hand, and to recreate his map I'll have to do some handwork myself. The isochronic lines generated by <a href="http://turfjs.org">turf.js</a> are lines and nicely closed polygons with holes. Also there are some issues at the edge of the map and there might be just too much detail.</div>
+</div>
+</body>

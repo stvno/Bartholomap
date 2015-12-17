@@ -1,0 +1,10 @@
+preproces: // calculate flight time
+    set 0 point 
+    airports.dat+routes.dat > time.csv == voor elke route de tijd dat die duurt 
+
+dijkstra: //calculate shortest flightroute
+    set 'begin' (TODO)
+    airports.dat+time.csv > dijkstra.csv == voor elk vliegveld de flightime van 'begin'
+
+create-cities: //zoek route naar nearest airport
+    populatedplaces.json + airports.dat + dijkstra.csv
