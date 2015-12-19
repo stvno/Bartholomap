@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <head>
+<title>Time travel map - Bartholomap</title>
     <meta id='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.12.1/mapbox-gl.js'></script>
     <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.12.1/mapbox-gl.css' rel='stylesheet' />
@@ -288,7 +289,7 @@ However as any traveler knows, being at the airport doesn't mean that you have a
 	    attribution:'test',
 	});
 	map.addControl(new mapboxgl.Navigation());
-	document.getElementsByClassName('mapboxgl-ctrl-bottom-right')[0].innerHTML+='Background: <a href="https://www.mapbox.com/about/maps/" target="_blank">© Mapbox</a> <a href="http://www.openstreetmap.org/about/" target="_blank">© OpenStreetMap</a> | Isochrones by @stvno';
+document.getElementsByClassName('mapboxgl-ctrl-bottom-right')[0].innerHTML+='Background: <a href="https://www.mapbox.com/about/maps/" target="_blank">© Mapbox</a> <a href="http://www.openstreetmap.org/about/" target="_blank">© OpenStreetMap</a> | Isochrones by <a href="https://twitter.com/stvno">@stvno</a>';
 	</script>
 </div>
 <div class="text caption">
@@ -298,7 +299,8 @@ Thanks to the kind folks of the <a href="http://www.thespatialcommunity.com/">Sp
 </div>
 <div id="footer">
 <div id="footmenu">
-<div><a href="./#top">Top</a></div><div><a href="howto.html">HOWTO</a></div><div><a href="view.html">Slippy Map</a></div><div><a href="mailto:bartholomap@minst.net">Contact</a></div><div><a href="https://twitter.com/stvno">Twitter</a></div><div><a href="https://github.com/stvno/Bartholomap">Code</a></div></div>
+<div><a href="./#top">Top</a></div><div><a href="howto.html">HOWTO</a></div><div><a href="img/map-hires.png">High Res Map</a></div><div><a href="view.html">Slippy Map</a></div><div><a href="https://raw.githubusercontent.com/stvno/Bartholomap/master/data/map.svg">SVG map</a></div><div><a href="https://github.com/stvno/Bartholomap">Code</a></div><div><a href="mailto:bartholomap@minst.net">Contact</a></div><div><a href="https://twitter.com/stvno">Twitter</a></div>
+</div>
 <div id="theend">
 ~ SMO ~ 2015 ~ DC ~
 </div>

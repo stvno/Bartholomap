@@ -6,9 +6,19 @@
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.12.1/mapbox-gl.js'></script>
     <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.12.1/mapbox-gl.css' rel='stylesheet' />
+    <link href='https://fonts.googleapis.com/css?family=Overlock' rel='stylesheet' type='text/css'>
+
     <style>
+    * {font-family: 'Overlock', sans-serif;}
         body { margin:0; padding:0; }
         #map { position:absolute; top:0; bottom:0; width:100%; }
+        .mapboxgl-ctrl-bottom-right {
+            background: rgba(255,255,255,0.4);
+            padding: 2px;
+        }
+        a {
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -24,6 +34,7 @@ var map = new mapboxgl.Map({
     maxZoom: 6,
     hash: true
 });
+document.getElementsByClassName('mapboxgl-ctrl-bottom-right')[0].innerHTML+='Background: <a href="https://www.mapbox.com/about/maps/" target="_blank">© Mapbox</a> <a href="http://www.openstreetmap.org/about/" target="_blank">© OpenStreetMap</a> | Isochrones by <a href="https://twitter.com/stvno">@stvno</a>';
 </script>
 
 </body>
