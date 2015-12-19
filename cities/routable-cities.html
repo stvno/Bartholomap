@@ -175,7 +175,7 @@ var ArcTime = function(begin,end,speed) {
 
 
 queue()
-    .defer(d3.csv, "places.csv")    
+    .defer(d3.csv, "step3.csv")    
     .defer(d3.json, "../flights/airports.json")    
     .await(ready)
 
@@ -187,12 +187,12 @@ function ready(error,places,airport) {
               "type": "Feature",
                   "properties": {
                     "airport": row.airport,
-                    "name": row.NAME,                  
+                    "name": row.name,                  
                     "time":parseFloat(row.time)
                   },
                   "geometry": {
                     "type": "Point",
-                    "coordinates": [parseFloat(row.LONGITUDE),parseFloat(row.LATITUDE)]
+                    "coordinates": [parseFloat(row.lon),parseFloat(row.lat)]
                   }  
           }
         }
@@ -205,12 +205,12 @@ function ready(error,places,airport) {
 //  var breaks = [0,7,12,15,17,19,21,24,110];
   var breaks = [5,10,20,30,40,70,100]
  //   var breaks = [5,10,20,30,40]
-  isolined = turf.isolines(airport, 'time', 180, breaks);
+ // isolined = turf.isolines(airport, 'time', 180, breaks);
 
   svg.append('g').selectAll(".pin")
     .data(airport.features)
     .enter().append("circle", ".pin")
-    .attr("r", 0.5)
+    .attr("r", 2)
     .attr("class",function(d){return quantize(d.properties.time)})
     .attr("transform", function(d) {
       return "translate(" + projection([
@@ -219,14 +219,14 @@ function ready(error,places,airport) {
       ]) + ")";
     });
 
-  svg.append("g").selectAll(".isochrone")
+ /* svg.append("g").selectAll(".isochrone")
     .data(isolined.features)
     .enter().append("path",".isochrone")      
     .attr("class",function(d){return 'lines '+quantize(d.properties.time)})
     .attr("d", path);
 
  
-
+*/
    
 }
 

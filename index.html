@@ -1,19 +1,133 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <head>
+    <meta id='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.12.1/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.12.1/mapbox-gl.css' rel='stylesheet' />
 <link href='https://fonts.googleapis.com/css?family=Dancing+Script|Overlock' rel='stylesheet' type='text/css'>
 <style>
-#content {
-max-width: 850px;
-margin-left:40px;
+body {
+	background: url('img/background.png');
+}
+#footer {
+	box-shadow: inset 0px 3px 5px 0px rgba(0,0,0,0.75);
+	background-color: rgba(9,9,9,0.6);
+	height: 200px;
+}
+#footmenu{
+	display: flex;
+	padding: 50px;
+	justify-content:center;
+}
+
+#footer div {
+	margin: 10px;
+}
+
+#footer a{
+    border: none;
+    color: #eeeeec;
+}
+#theend {
+	bottom:10;
+	text-align: center;
+	font-family: 'Dancing Script', cursive;
+	font-size: 8px;
+	color: rgba(255,255,255,0.4);
 
 }
+/* Extra small devices (phones, less than 768px) */
+/* No media query since this is the default in Bootstrap */
+#sidebar, .goup{
+	display:none;
+}
+ul {
+	margin-top:100px;
+	list-style-type:none;
+	margin-bottom:-50px;
+}
+/* Small devices (tablets, 768px and up) */
+@media (min-width: 700px) { 
+	#sidebar {
+		display: inline-block;
+		top: 0px;
+		box-shadow:  0px 3px 5px 0px rgba(0,0,0,0.75);
+		background-color: rgba(255,255,255,0.3);
+		padding-bottom:5px;
+	}
+	.ulhead {
+		display: none;
+	}
+	#menu ul{
+		display:flex;		
+		justify-content: center;
+	}
+	ul {
+		margin: 0px;
+	}
+	li {
+		margin: 5px;
+	}
+
+}
+
+/* Medium devices (desktops, 992px and up) */
+@media (min-width: 992px) { 
+	.goup {
+		display: block;
+		margin-left: -90px !important;
+		margin-top: -35px;
+		margin-bottom: 20px;
+		color: #999;
+	}
+	#sidebar {
+		display: inline-block;
+		max-width: 300px;
+		min-width: 20px;
+		box-shadow:none;
+		border-right: solid 1px #eeeeec;
+	}
+	#container {
+		display:flex;
+		justify-content:center;
+	}
+	h1 {
+		margin-left: -40px;
+	}
+	#content {
+		max-width: 850px;
+		margin-left:40px;
+	}
+	li {
+		margin-top:10px;
+	}
+	.ulhead {
+		display: inline-block;
+	}
+	#menu ul{
+		display:block;		
+		
+	}
+	ul {
+		margin-top: 60px;
+		padding: 0px;
+	}
+	li {
+		margin: 5px;
+	}
+}
+/* Large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+
+ }
+
+
+
 * {font-family: 'Overlock', sans-serif;}
 body, html {margin: 0;padding: 0;}
 h1,h2,h3{font-family: 'Dancing Script', cursive;}
 h1 {
     padding: 0.2em;
-    margin-left:-40px;
     margin-bottom:5px;
    
 }
@@ -25,7 +139,7 @@ h2 {
 h3 {
 	font-size: smaller;
 }
-div {
+.text {
 	padding: 0.2em;
 	margin: 5px;
 }
@@ -37,6 +151,7 @@ div {
 	margin-top:-5px;
 }
 img {
+	background: white;
 	margin-top:10px;
 	margin-bottom: 10px;
 	border:solid 1px rgba(157,157,157,0.2);
@@ -68,49 +183,134 @@ a:visited {
 .img a{
  	border: none !important;
 }
+#map {
+	height: 500px;
+	margin:10px;
+
+}
+.thinborder {
+	padding: 0;
+	margin:0;
+	border: solid 1px #2e3436;
+}
+.thickborder {
+	margin: 1px;
+	border: solid 2px #2e3436;
+	padding: 1px;
+}
 
 </style>
 </head>
 <body>
+<div id="container">
+<div id="sidebar">
+<div id="menu">
+<ul>
+<li class="ulhead"><b>Chapters</b></li>
+<li><a href="./#top">Bartholomap project</a></li>
+<li><a href="./#bartholomew">John George Bartholomew's map</a></li>
+<li><a href="./#airtravel">Air travel map</a></li>
+<li><a href="./#routing">Enhance with actual destinations</a></li>
+<li><a href="./#crow">As the crow flies</a></li>
+<li><a href="./#manual">Manual labour</a></li>
+
+<li class="ulhead"><b>Other pages</b></li>
+<li><a href="howto.html">HOWTO</a></li>
+<li><a href="view.html">Slippy map</a></li>
+</ul>
+</div>
+</div>
 <div id="content">
-<h1>Bartholomap project</h1>
-<div>
-A while ago I read an article in <a href="http://www.intelligentlifemagazine.com/places/cartophilia/time-travel">Intelligent Life</a> about a hundred year old map that showed how long it took to travel from London to anywhere on the globe. The map, made before airtravel was common, show the influence of shipping routes and intercontinental railways. Within a month you could travel to all but the most remote and landlocked places.
+<h1 id="top">Bartholomap project</h1>
+<div class="text">
+This page tells the story how I came to make the Bartholomap as seen below. For the technical details and code I refer you to the <a href="howto.html">HOWTO</a> and <a href="https://github.com/stvno/Bartholomap">GitHub repository</a>. If you have any questions feel free to <a href="mailto:bartholomap@minst.net">contact</a> <a href="https://twitter.com/stvno">me</a>.</div>
+<div class="img text">
+<a href="img/map.png"><img src="img/map-thumb.png"/></a>
+<div class="caption text">The isochronic map created by <a href="https://twitter.com/stvno">me</a> showing various travel times from London in 2015 - <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">CC-BY Steven M. Ottens</a></div>
 </div>
-<div class="img">
+<h2 id="bartholomew">John George Bartholomew's map</h2><span class="goup"><a href="./#top">menu</a></span>
+<div class="text">
+A while ago I read an article in <a href="http://www.intelligentlifemagazine.com/places/cartophilia/time-travel">Intelligent Life</a> about a hundred year old map that showed how long it took to travel from London to anywhere on the globe. The map, made before airtravel was common, shows the influence of shipping routes and intercontinental railways. Within a month you could travel to all but the most remote and landlocked places.
+</div>
+<div class="img text">
 <a href="img/map.jpg"><img src="img/map-thumb.jpg"/></a>
-<div class="caption">An isochronic map created by John George Bartholomew showing various travel times from London in 1914 Photo: RGS/Intelligent Life</div>
+<div class="caption text">An isochronic map created by John George Bartholomew showing various travel times from London in 1914 Photo: RGS/Intelligent Life</div>
 </div>
-<h2>Air travel map</h2>
-<div>
+<h2 id="airtravel">Air travel map</h2><span class="goup"><a href="./#top">menu</a></span>
+<div class="text">
 Since that map was created the world has changed, and I was wondering how such a map would look like if it was created today. Since airtravel is the popular choice for long distance travel I decided to start with that. The <a href="http://openflights.org/data.html">OpenFlights</a> project provides a list of airport-locations and flight-routes. Taking London as a starting point and using 600km/h as travelspeed it was fairly easy to calculate the time it takes to get to each of the ~3000 airports in the list. <a href="">TBD: link naar github</a>. Since contemporary travel is so much faster I changed the scale from days to hours:
 </div>
-<div>
+<div class="text">
 <span class="legend"><span class="nul">within 5 hours</span><span class="vijf">5 to 10 hours</span><span class="tien">10 to 20 hours</span><span class="twintig">20 to 30 hours</span><span class="dertig">30 to 40 hours</span><span class="veertig">over 40 hours</span>
 
 </div>
-<div class="img">
+<div class="img text">
 <a href="img/airports.png"><img src="img/airports.png" width="300px" height="300px"/></a>
 <a href="img/airports-lines.png"><img src="img/airports-lines.png" width="300px" height="300px"/></a>
 </div>
-<div class="caption">Map of all airports as ±3000 dots classified by travel time (left) and as isochronic lines (right)</div>
-<h2>Enhance with OSRM</h2>
-<div>
-However as any traveler knows, being at the airport doesn't mean that you have arrived. To further the resolution of the isochronic map I used the 7000 places from <a href="http://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-populated-places/">Natural Earth Data</a> to calculate the travel time to actual places. For each place I looked up the nearest airport <a href="">TBD: link naar github</a> and ran the two coordinates against the <a href="http://project-osrm.org/">Open Source Routing Machine</a>. The resulting maps have more detail, but since only about half of the places were routable we still have some work to do.
+<div class="caption  text">Map of all airports as ±3000 dots classified by travel time (left) and as isochronic lines (right)</div>
+<h2 id="routing">Enhance with actual destinations</h2><span class="goup"><a href="./#top">menu</a></span>
+<div class="text">
+However as any traveler knows, being at the airport doesn't mean that you have arrived. To further the resolution of the isochronic map I used the 7000 places from <a href="http://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-populated-places/">Natural Earth Data</a> to calculate the travel time to actual places. For each place I looked up the nearest airport and within a radius of a 1000km the nearest nonstop, one-stop and two-stop airports. For all four airports I calculated the total traveltime from London via that airport to the destination. This was done by using the excellent <a href="http://project-osrm.org/">Open Source Routing Machine</a>. 
 </div>
-<div class="img">
+<div class="img text">
 <a href=="img/airports-places.png"><img src="img/airports-places.png" width="300px" height="300px"/></a>
 <a href="img/airports-places-lines.png"><img src="img/airports-places-lines.png" width="300px" height="300px"/></a>
 </div>
-<div class="caption">Map of all airports and routable places as ±8000 dots classified by travel time (left) and as isochronic lines (right)</div>
-<h2>As the crow flies</h2>
-<div>For about 3000 places which did not get a result from the previous exercise, I decided to divide them into landlocked and coastal cities. (This could be done way more advanced, but I just looked on the map and made a judgement call). For both types of places I calculated the straight line distance (using <a href="http://www.movable-type.co.uk/scripts/latlong.html">great arc</a> distance) and decided upon 5km/h as landspeed and 25km/h for water. This way I had the traveltime from London to more than ten thousand places around the globe.</div>
-<div class="img">
+<div class="caption text">Map of all airports and routable places as ±10350 dots classified by travel time (left) and as isochronic lines (right)</div>
+<h2 id="crow">As the crow flies</h2><span class="goup"><a href="./#top">menu</a></span>
+<div class="text">For about 190 places which did not get a result from the previous exercise, I decided to divide them into landlocked and coastal cities. (This could be done way more advanced, but I just looked on the map and made a judgement call). For both types of places I calculated the straight line distance (using <a href="http://www.movable-type.co.uk/scripts/latlong.html">great arc</a> distance) and decided upon 5km/h as landspeed and 25km/h for water. This may sound slow, but this is 'as the crow flies' in terrain without roads. Boats obviously are less hindered by the lack of roads.</div>
+<div class="img text">
 <a href="img/everything.png"><img src="img/everything.png"width="300px" height="300px"/></a>
 <a href="img/everything-lines.png"><img src="img/everything-lines.png"width="300px" height="300px"/></a>
 </div>
-<div class="caption">Map of all airports and places as ±10000 dots classified by travel time (left) and as isochronic lines (right)</div>
-<h2>Manual labour</h2>
-<div>This is as far as the automated process can go. John George Bartholomew created his map by hand, and to recreate his map I'll have to do some handwork myself. The isochronic lines generated by <a href="http://turfjs.org">turf.js</a> are lines and nicely closed polygons with holes. Also there are some issues at the edge of the map and there might be just too much detail.</div>
+<div class="caption text">Map of all airports and places as ±10500 dots classified by travel time (left) and as isochronic lines (right)</div>
+<h2 id="manual">Manual labour</h2><span class="goup"><a href="./#top">menu</a></span>
+<div  class="text">This is as far as the automated process can go. John George Bartholomew created his map by hand, and to reimagine his map I'll have to do some handwork myself. The isochronic lines generated by <a href="http://turfjs.org">turf.js</a> are lines and not nicely closed polygons with holes. With some QGIS magic I created the necessary polygons which I then could load into Inkscape to create the <a href="#map">map</a> but also load into <a href="https://www.mapbox.com/mapbox-studio/">MapBox Studio</a> to create the slippy map below.</div>
+
+<div class="text">
+	<a id="slippymap" >&nbsp;</a>
+	<div class="thinborder">
+		<div class="thickborder">
+			<div class="thinborder">
+				<div id="map"></div>
+			</div>
+		</div>
+	</div>
+	<script>
+	mapboxgl.accessToken = 'pk.eyJ1Ijoid2hlcmVjYW1wZXUiLCJhIjoieHE4bVNuRSJ9.qFTj9L2TMzVXX8G2QwJl_g';
+	var map = new mapboxgl.Map({
+	    container: 'map', // container id
+	    style: 'mapbox://styles/wherecampeu/ciiap7a8j00bnnqlz6lw2pefo', //hosted style id
+	    center: [0,51], // starting position
+	    zoom: 1, // starting zoom
+	    maxZoom: 6,
+	    attribution:'test',
+	});
+	map.addControl(new mapboxgl.Navigation());
+	document.getElementsByClassName('mapboxgl-ctrl-bottom-right')[0].innerHTML+='Background: <a href="https://www.mapbox.com/about/maps/" target="_blank">© Mapbox</a> <a href="http://www.openstreetmap.org/about/" target="_blank">© OpenStreetMap</a> | Isochrones by @stvno';
+	</script>
 </div>
+<div class="text caption">
+Thanks to the kind folks of the <a href="http://www.thespatialcommunity.com/">Spatial Community</a> for their inspiration and help, the <a href="http://openflights.org/">Open Flight</a> and <a href="http://www.naturalearthdata.com/">Natural Earth</a> communities for their data and my wife for the original suggestion to create this map.
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footmenu">
+<div><a href="./#top">Top</a></div><div><a href="howto.html">HOWTO</a></div><div><a href="view.html">Slippy Map</a></div><div><a href="mailto:bartholomap@minst.net">Contact</a></div><div><a href="https://twitter.com/stvno">Twitter</a></div><div><a href="https://github.com/stvno/Bartholomap">Code</a></div></div>
+<div id="theend">
+~ SMO ~ 2015 ~ DC ~
+</div>
+</div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-58675628-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
 </body>

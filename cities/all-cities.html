@@ -145,8 +145,8 @@ City: 503, LCY
 Heathrow: 507, LHR
 Stansted: 548, STN
 */
-var southPole = {NAME :'AmundseniScott South Pole Station', tijd: 8, airport:'PUQ'};
-var boatplaces = {ADM0_A3 : ['ATA','SGS'], NAME : ['Atafu','Neiafu','Raoul Island Station','Waitangi','Provideniya','Uelen','Mys Shmidta','Egvekinot']};
+var southPole = {name :'AmundseniScott South Pole Station', time: 8, airport:'PUQ'};
+var boatplaces = {adm : ['ATA','SGS'], name : ['Atafu','Neiafu','Raoul Island Station','Waitangi','Provideniya','Uelen','Mys Shmidta','Egvekinot']};
 
 
 
@@ -182,29 +182,29 @@ var ArcTime = function(begin,end,speed) {
 
 
 queue()
-    .defer(d3.csv, "places.csv")    
+    .defer(d3.csv, "step3.csv")    
     .defer(d3.json, "../flights/airports.json")    
     .await(ready)
 
 function ready(error,places,airport) {
-  //airport,tijd,valid,lat,lon,name,timetoairport 
+  //airport,time,valid,lat,lon,name,timetoairport 
     cities = places.map(function(row) {
         if(row.valid == "true") {
           return {
               "type": "Feature",
                   "properties": {
                     "airport": row.airport,
-                    "name": row.NAME,                  
-                    "tijd":parseFloat(row.tijd)
+                    "name": row.name,                  
+                    "time":parseFloat(row.time)
                   },
                   "geometry": {
                     "type": "Point",
-                    "coordinates": [parseFloat(row.LONGITUDE),parseFloat(row.LATITUDE)]
+                    "coordinates": [parseFloat(row.lon),parseFloat(row.lat)]
                   }  
           }
         }
         else {
-            if(row.NAME == southPole.NAME) {
+            if(row.name == southPole.name) {
               //Southpole
               console.log('southpole')
               var puq = airport.features.filter(function(d){if(d&&d.properties) return d.properties.destination=="PUQ"})[0]
@@ -212,30 +212,30 @@ function ready(error,places,airport) {
                     "type": "Feature",
                         "properties": {
                           "airport": 'PUQ',
-                          "name": row.NAME,                  
-                          "tijd":puq.tijd+southPole.tijd
+                          "name": row.name,                  
+                          "time":puq.time+southPole.time
                         },
                         "geometry": {
                           "type": "Point",
-                          "coordinates": [parseFloat(row.LONGITUDE),parseFloat(row.LATITUDE)]
+                          "coordinates": [parseFloat(row.lon),parseFloat(row.lat)]
                         }  
                 }
             }
-            else if (boatplaces.NAME.indexOf(row.NAME)>-1 || boatplaces.ADM0_A3.indexOf(row.ADM0_A3)>-1){
+            else if (boatplaces.name.indexOf(row.name)>-1 || boatplaces.adm.indexOf(row.adm)>-1){
               //coast, let's float
               console.log('boat')
               var start = airport.features.filter(function(d){if(d&&d.properties) return d.properties.destination==row.airport})[0]
-              var tijd = ArcTime({lat:start.geometry.coordinates[1],lon:start.geometry.coordinates[0]},{lat:parseFloat(row.LATITUDE),lon:parseFloat(row.LONGITUDE)},25000); //25km/h
+              var time = ArcTime({lat:start.geometry.coordinates[1],lon:start.geometry.coordinates[0]},{lat:parseFloat(row.lat),lon:parseFloat(row.lon)},25000); //25km/h
                return {
                     "type": "Feature",
                         "properties": {
                           "airport": row.airport,
-                          "name": row.NAME,                  
-                          "tijd":start.properties.tijd+tijd
+                          "name": row.name,                  
+                          "time":start.properties.time+time
                         },
                         "geometry": {
                           "type": "Point",
-                          "coordinates": [parseFloat(row.LONGITUDE),parseFloat(row.LATITUDE)]
+                          "coordinates": [parseFloat(row.lon),parseFloat(row.lat)]
                         }  
                 }
             }
@@ -243,17 +243,17 @@ function ready(error,places,airport) {
               //land, let's walk
               console.log('walk')
               var start = airport.features.filter(function(d){if(d&&d.properties) return d.properties.destination==row.airport})[0]
-              var tijd = ArcTime({lat:start.geometry.coordinates[1],lon:start.geometry.coordinates[0]},{lat:parseFloat(row.LATITUDE),lon:parseFloat(row.LONGITUDE)},5000); //5km/h
+              var time = ArcTime({lat:start.geometry.coordinates[1],lon:start.geometry.coordinates[0]},{lat:parseFloat(row.lat),lon:parseFloat(row.lon)},5000); //5km/h
                return {
                     "type": "Feature",
                         "properties": {
                           "airport": row.airport,
-                          "name": row.NAME,                  
-                          "tijd":start.properties.tijd+tijd
+                          "name": row.name,                  
+                          "time":start.properties.time+time
                         },
                         "geometry": {
                           "type": "Point",
-                          "coordinates": [parseFloat(row.LONGITUDE),parseFloat(row.LATITUDE)]
+                          "coordinates": [parseFloat(row.lon),parseFloat(row.lat)]
                         }  
                 }
             }
@@ -266,14 +266,14 @@ function ready(error,places,airport) {
 //quantiles
 //  var breaks = [0,7,12,15,17,19,21,24,110];
   //var breaks = [0,1,2,3,4,5,6,8,10,14,18,20,24,28,30,34,38,40,50,60,70,80,90,100];
-  var breaks = [5,10,20,30,40]
-  isolined = turf.isolines(airport, 'tijd', 720, breaks);
-
+ /* var breaks = [5,10,20,30,40]
+  isolined = turf.isolines(airport, 'time', 180, breaks);
+*/
   svg.append('g').selectAll(".pin")
     .data(airport.features)
     .enter().append("circle", ".pin")
-    .attr("r", 0.5)
-    .attr("class",function(d){return quantize(d.properties.tijd)})
+    .attr("r", 2)
+    .attr("class",function(d){return quantize(d.properties.time)})
     .attr("transform", function(d) {
       return "translate(" + projection([
         d.geometry.coordinates[0],
@@ -281,11 +281,11 @@ function ready(error,places,airport) {
       ]) + ")";
     });
 
-  svg.append("g").selectAll(".isochrone")
+/*  svg.append("g").selectAll(".isochrone")
     .data(isolined.features)
     .enter().append("path",".isochrone")      
-    .attr("class",function(d){return 'lines '+quantize(d.properties.tijd)})
-    .attr("d", path);
+    .attr("class",function(d){return 'lines '+quantize(d.properties.time)})
+    .attr("d", path);*/
    
 }
 

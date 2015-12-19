@@ -60,13 +60,16 @@ var colorMe = function(p) {
     console.log(p);
     return 'p';
 }
-var width = 900,
-    height = 900;
+var width = 1920,
+    height = 1080;
 
 var projection = d3.geo.times()
     .scale((width + 1) / 2 / Math.PI)
     .translate([width / 2, height / 2])
     .precision(.1);
+var zoom = d3.behavior.zoom()
+    .scaleExtent([1, 8])
+    .on("zoom", zoomed);
 
 var path = d3.geo.path()
     .projection(projection);
@@ -77,7 +80,14 @@ var graticule = d3.geo.graticule();
 var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
-var defs = svg.append("defs");
+var g = svg.append("g");
+/*svg
+    .call(zoom)
+    .call(zoom.event);    */
+function zoomed() {
+  g.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
+var defs = g.append("defs");
 
 defs.append("path")
     .datum({type: "Sphere"})
@@ -89,11 +99,11 @@ defs.append("clipPath")
   .append("use")
     .attr("xlink:href", "#sphere");
 
-svg.append("use")
+g.append("use")
     .attr("class", "stroke")
     .attr("xlink:href", "#sphere");
 
-svg.append("use")
+g.append("use")
     .attr("class", "fill")
     .attr("xlink:href", "#sphere");
     
@@ -113,50 +123,61 @@ queue()
     .defer(d3.json, "data/30-20.geojson")    
     .defer(d3.json, "data/40-30.geojson")    
     .defer(d3.json, "data/50-40.geojson")    
+    .defer(d3.json, "cities/step4-points.json")    
     .await(ready)
 
-function ready(error,world,vijf,tien,twintig,dertig,veertig,vijftig) {
-  svg.append("g").insert("path", ".graticule")
+function ready(error,world,vijf,tien,twintig,dertig,veertig,vijftig,points) {
+  g.append("g").insert("path", ".graticule")
     .datum(topojson.feature(world, world.objects.land))
     .attr("class", "glow2")
     .attr("d", path);
-  svg.append("g").insert("path", ".graticule")
+  g.append("g").insert("path", ".graticule")
     .datum(topojson.feature(world, world.objects.land))
     .attr("class", "glow")
     .attr("d", path);    
-  svg.append("g").insert("path", ".graticule")
+  g.append("g").insert("path", ".graticule")
     .datum(topojson.feature(world, world.objects.land))
     .attr("class", "land")
     .attr("d", path);
-  svg.append("g").insert("path", ".isochrone")
+  g.append("g").insert("path", ".isochrone")
     .datum(vijftig)
     .attr("class",'h50')
     .attr("d", path);
-  svg.append("g").insert("path", ".isochrone")
+  g.append("g").insert("path", ".isochrone")
     .datum(veertig)
     .attr("class",'h40')
     .attr("d", path);
- svg.append("g").insert("path", ".isochrone")
+ g.append("g").insert("path", ".isochrone")
     .datum(dertig)
     .attr("class",'h30')
     .attr("d", path);
-  svg.append("g").insert("path", ".isochrone")
+  g.append("g").insert("path", ".isochrone")
     .datum(twintig)
     .attr("class",'h20')
     .attr("d", path); 
-  svg.append("g").insert("path", ".isochrone")
+  g.append("g").insert("path", ".isochrone")
     .datum(tien)
     .attr("class",'h10')
     .attr("d", path);       
-  svg.append("g").insert("path", ".isochrone")
+  g.append("g").insert("path", ".isochrone")
     .datum(vijf)
     .attr("class",'h05')
     .attr("d", path); 
-  svg.append("g").insert("path", ".graticule")
+  g.append('g').selectAll(".pin")
+    .data(points.features)
+    .enter().append("circle", ".pin")
+    .attr("r", 1)   
+    .attr("transform", function(d) {
+      return "translate(" + projection([
+        d.geometry.coordinates[0],
+        d.geometry.coordinates[1]
+      ]) + ")";
+    });
+  g.append("g").insert("path", ".graticule")
     .datum(topojson.feature(world, world.objects.land))
     .attr("class", "coast")
     .attr("d", path);
-svg.append("g").append("path")
+g.append("g").append("path")
     .datum(graticule)
     .attr("class", "graticule")
     .attr("clip-path", "url(#clip)")
