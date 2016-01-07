@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+<title>HOWTO make a time travel map</title>
+  <meta id='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+  <link href='https://fonts.googleapis.com/css?family=Dancing+Script|Overlock' rel='stylesheet' type='text/css'>
+	<link href='./style/style.css' rel='stylesheet' type='text/css'/>
+
+  <script src="//d3js.org/d3.v3.min.js"></script>
+  <script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+  <script src="//d3js.org/topojson.v1.min.js"></script>
+  <script src="//d3js.org/queue.v1.min.js"></script>
+  <script type="text/javascript" src="./howto/settings.js"></script>
+  <script type="text/javascript" src="./howto/utils.js"></script>
+
+  <script type="text/javascript" src="./howto/dijkstras.js"></script>
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+</head>
+<body>
+<div id="calculating">calculating, please be patient...</div>
+<div id="container">
+<div id="sidebar">
+  <div id="menu">
+    <ul>
+      <li class="ulhead"><b>Chapters</b></li>
+      <li><a href="step1">1. Get the data</a></li>
+      <li><a href="step2">2. Get the data</a></li>
+      <li><a href="step3">3. Get the data</a></li>
+      <li><a href="step4">4. Get the data</a></li>
+      <li><a href="step5">5. Get the data</a></li>
+      <li><a href="step6">6. Get the data</a></li>
+      <li><a href="step7">7. Get the data</a></li>
+      <li><a href="step8">8. Get the data</a></li>
+      <li><a href="step9">9. Get the data</a></li>
+
+      <li class="ulhead"><b>Other pages</b></li>
+      <li><a href="index.html">Project</a></li>
+      <li><a href="view.html">Slippy map</a></li>
+   </ul>
+  </div>
+</div>
+<div id="content">
+  <h1 id="top">Howto make a time travel map</h1>
+  <div class="text">
+    <p>
+Various people indicated that they were interested in the process of making the <a href="index.html">Bartholomap</a>. So here is the howto, be aware it is quite technical, involves a lot of waiting, looking at javascript consoles and general frustration. So be warned! Obviously there are many ways to make such a map, my way is definately not the best, it is probably not even the fastest or most accurate, it was just the easiest for me to build.
+    </p>
+    <p>
+Since I assume you'd like to create your own version of the map I've split the project in several steps and let you manually step between them. Make sure you have a few hours, plenty of computing power (I've done it on a laptop with an i7 processor and 8GB RAM) and don't reload or crash your browser during the process. When you change a value, the steps you need to compute to represent the change will be marked and for various steps there will be an output field which you can copy paste to prevent redoing that step needlessly.
+    </p>
+    <p>
+    <b>I strongly recommend using Chrome and keeping the console open. Several steps take minutes or even hours and the console should give you a hint of the progress.</b>
+    </p>
+  </div>
+  <h2 id="step1">Step 1 - Get the data</h2><span class="goup"><a href="./#top">menu</a></span>
+  <div class="text">
+The amount of data you need is not that much actually, you need three files which are included in the repository. The files are:
+    <ol>
+      <li><a href="https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat">airports.dat</a> from <a href="http://openflights.org/data.html">OpenFlights</a>.</li>
+      <li><a href="https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat">routes.dat</a> also from <a href="http://openflights.org/data.html">OpenFlights</a>.</li>
+      <li><a href="http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_populated_places_simple.zip">Populated places</a> from <a href="http://www.naturalearthdata.com/downloads/10m-cultural-vectors/">Natural Earth Data</a>.</li>
+    </ol>   
+    <p>
+The first two files can be directly put in the ./data folder. The last file is a shape files which needs to be converted to GeoJSON. There are a <a href="http://www.naturalearthdata.com/downloads/10m-cultural-vectors/">multitude of ways</a>. I used <a href="http://qgis.org">QGIS</a> which is a useful tool in general, especially if you want to create a nice map out of your results. Once you have created a geojson name it <code>populated_places.geojson</code>.
+    </p>
+    <p>
+<b>If you changed any of these three files check this checkbox: <input type="checkbox" id="filesChanged"> files changed.</b>
+    </p>
+  </div>
+
+
+<script type="text/javascript" src="./howto/step1.js"></script>
+
+
+  <h2 id="step2">Step 2 - Set the beginpoint</h2><span class="goup"><a href="./#top">menu</a></span>
+  <div class="text">
+    The original map by John George Bartholomew was about travel time from London, so is the Bartholomap. However if you want to set a different starting point you need to change the BEGIN variable.
+    <form id="setBegin">
+      lat: <input type="number" id="beginLat" step="any" required> lon: <input type="number" id="beginLon" step="any" required><br/>
+      List of airport codes: <input type="text" id="beginAirports" required pattern="([A-Z]{3}|,)*"><br/>
+      <button id="beginSubmit" type="button">Set begin</button>
+    </form>
+    <pre class="prettyprint" id="beginCode">
+var BEGIN = { 
+  center: {lat:51.5287352,lon:-0.3817734},
+  airportcodes: ['LTN','LGW','LCY','LHR','STN'], 
+  airports: [
+      {iata:'LTN',lat:51.874722,lon:-0.368333,id:492},
+      {iata:'LGW',lat:51.148056,lon:-0.190278,id:502},
+      {iata:'LCY',lat:51.505278,lon:0.055278,id:503},
+      {iata:'LHR',lat:51.4775,lon:-0.461389,id:507}, 
+      {iata:'STN',lat:51.885,lon:0.235,id:548}
+    ]
+}
+    </pre>
+    <div id="output2" class="output"></div>
+  </div>
+
+
+<script type="text/javascript" src="./howto/step2.js"></script>
+
+
+  <h2 id="step3">Step 3 - Calculate the flight time</h2><span class="goup"><a href="./#top">menu</a></span>
+  <div class="text">
+    <p>
+Assuming a flight takes the shortest route between the two airports we can calculate the flighttime with the <a href="
+http://www.movable-type.co.uk/scripts/latlong.html">great circle</a> calculation. I've taken 600 km/h as the average speed, but you can change the speed below. But be aware it takes a few minutes to recalculate the entire set.
+    </p>
+      <form id="step3Form">
+        <input type="number" id="flightSpeed" value="600">km/h<br/>
+        <button type="button" id="flightSubmit">Recalculate</button>
+      </form>
+      <div id="output3" class="output"></div>
+  </div>
+
+
+<script type="text/javascript" src="./howto/step3.js"></script>
+
+
+  <h2 id="step4">Step 4 - Calculate shortest path</h2><span class="goup"><a href="./#top">menu</a></span>
+  <div class="text">
+    <p>
+Now we know how long each flight take, we can use Dijkstra's algorithm to calculate the shortest path from BEGIN to each airport. <b>this takes <i>LONG</i></b>.
+    </p>
+      <form id="step4Form">
+        <button type="button" id="dijkstraSubmit">Recalculate</button>
+      </form>
+  </div>
+
+
+<script type="text/javascript" src="./howto/step4.js"></script>
+
+
+
+1. Get the data
+2. define BEGIN
+3. For each air-route calculate travel time
+4. Calculate shortest route to each airport from BEGIN
+5. Get travel time to each place from BEGIN via 'nearest airport' &nbsp; nearest nonstop, nearest one stop, nearest two stop airport within 1000km and gets the shortest time
+6. For unroutable places calculate the 'as the crow flies' travel time
+7. Create isochrones
+
+</p>
+</div>
+<div class="img text">
+
+<div class="caption text"></div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footmenu">
+<div><a href="./#top">Top</a></div><div><a href="howto.html">HOWTO</a></div><div><a href="img/map-hires.png">High Res Map</a></div><div><a href="view.html">Slippy Map</a></div><div><a href="https://raw.githubusercontent.com/stvno/Bartholomap/master/data/map.svg">SVG map</a></div><div><a href="https://github.com/stvno/Bartholomap">Code</a></div><div><a href="mailto:bartholomap@minst.net">Contact</a></div><div><a href="https://twitter.com/stvno">Twitter</a></div>
+</div>
+<div id="theend">
+~ SMO ~ 2015 ~ DC ~
+</div>
+</div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-58675628-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</body>
